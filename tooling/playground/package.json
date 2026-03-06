@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/playground",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Interactive browser-based playground for experimenting with HexDI dependency injection patterns",
   "type": "module",
   "main": "./dist/index.js",

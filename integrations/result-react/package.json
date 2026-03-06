@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/result-react",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "React bindings for @hex-di/result - hooks, components, and utilities for Result-driven UIs",
   "type": "module",
   "main": "./dist/index.js",

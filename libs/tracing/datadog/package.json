@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/tracing-datadog",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "DataDog APM bridge for HexDI distributed tracing",
   "type": "module",
   "main": "./dist/index.js",

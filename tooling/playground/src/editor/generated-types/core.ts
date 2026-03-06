@@ -179,6 +179,7 @@ export type PortDirection = "inbound" | "outbound";
  * - IDE tooltips and documentation
  * - Dependency graph visualization
  * - API documentation generation
+ * - Runtime operation completeness verification (via \`methods\`)
  *
  * All properties are optional and readonly.
  *
@@ -189,6 +190,7 @@ export type PortDirection = "inbound" | "outbound";
  *   description: 'Handles user CRUD operations',
  *   category: 'domain',
  *   tags: ['user', 'crud', 'core'],
+ *   methods: ['getUser', 'createUser', 'deleteUser'],
  * });
  * \`\`\`
  */
@@ -199,6 +201,14 @@ export interface PortMetadata {
 	readonly category?: string;
 	/** Searchable tags for filtering and discovery */
 	readonly tags?: readonly string[];
+	/**
+	 * Runtime method names for operation completeness verification.
+	 *
+	 * When provided, the build pipeline can verify at runtime that adapter
+	 * factories produce objects implementing all listed methods. This is
+	 * opt-in: ports without \`methods\` skip runtime completeness checks.
+	 */
+	readonly methods?: readonly string[];
 }
 /**
  * A port with hexagonal architecture direction and optional metadata.
@@ -419,6 +429,8 @@ export interface CreatePortConfig<TName extends string, TDirection extends PortD
 	readonly category?: TCategory & SuggestedCategory;
 	/** Searchable tags for filtering and discovery */
 	readonly tags?: readonly string[];
+	/** Runtime method names for operation completeness verification */
+	readonly methods?: readonly string[];
 }
 /**
  * Configuration for createPort.
@@ -430,6 +442,7 @@ export interface PortConfig {
 	readonly description?: string;
 	readonly category?: SuggestedCategory;
 	readonly tags?: readonly string[];
+	readonly methods?: readonly string[];
 }
 /**
  * Creates a typed port token with direction and optional metadata.
@@ -468,6 +481,7 @@ export interface PortConfig {
  * @remarks
  * - Direction defaults to 'outbound' at both runtime and type level
  * - \`tags\` returns \`[]\` when not specified (not undefined)
+ * - \`methods\` returns \`undefined\` when not specified
  * - \`description\` and \`category\` return \`undefined\` when not specified
  */
 export declare function createPort<const TName extends string, TService, const TDirection extends PortDirection, const TCategory extends string = string>(config: PortConfig & {
@@ -504,6 +518,12 @@ export declare function createPort<const TConfig extends PortConfig>(config: TCo
  * // With direction
  * const RequestPort = port<Request>()({ name: "Request", direction: "inbound" });
  * // Type: DirectedPort<"Request", Request, "inbound">
+ *
+ * // With methods for runtime completeness verification
+ * const UserPort = port<UserService>()({
+ *   name: "UserService",
+ *   methods: ["getUser", "createUser", "deleteUser"],
+ * });
  * \`\`\`
  *
  * @typeParam TService - The service interface type
@@ -943,9 +963,37 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 	 */
 	readonly clonable: TClonable;
 	/**
+	 * Whether the resolved service instance should be \`Object.freeze()\`d before injection.
+	 *
+	 * When \`true\` (or omitted/defaulted to \`true\`), the container applies \`Object.freeze()\`
+	 * to the service instance after factory invocation and before returning it to the consumer.
+	 * This prevents capability tampering where one consumer modifies a shared service.
+	 *
+	 * When \`false\`, the service instance is returned as-is (mutable). Use this for services
+	 * that require mutable internal state (e.g., connection pools, caches).
+	 *
+	 * @remarks
+	 * - Freeze is shallow only (consistent with Result/Option freeze behavior)
+	 * - Singleton services are frozen once on first resolution; the cached frozen reference is reused
+	 * - Transient services are frozen on every resolution (new frozen instance each time)
+	 * - Scoped services are frozen once per scope
+	 *
+	 * @default true
+	 */
+	readonly freeze: boolean;
+	/**
 	 * Optional finalizer function called during disposal.
 	 */
 	finalizer?(instance: InferService<TProvides>): void | Promise<void>;
+	/**
+	 * Runtime metadata listing the \`_tag\` values of error types this adapter's factory may produce.
+	 *
+	 * Populated by \`createAdapter()\` when \`errorTags\` is provided in the config.
+	 * Used by graph inspection to compute transitive error profiles per port.
+	 *
+	 * Empty array or undefined means the adapter is considered infallible for inspection purposes.
+	 */
+	readonly __errorTags?: readonly string[];
 };
 /**
  * Structural interface matching ANY Adapter without using \`any\`.
@@ -1004,9 +1052,21 @@ export interface AdapterConstraint {
 	 */
 	readonly clonable: boolean;
 	/**
+	 * Whether the resolved service instance should be \`Object.freeze()\`d before injection.
+	 * Defaults to true (frozen by default).
+	 */
+	readonly freeze: boolean;
+	/**
 	 * Optional finalizer (contravariant param accepts any instance type).
 	 */
 	finalizer?(instance: never): void | Promise<void>;
+	/**
+	 * Runtime metadata listing the \`_tag\` values of error types this adapter's factory may produce.
+	 *
+	 * Used by graph inspection to compute transitive error profiles per port.
+	 * Empty array or undefined means the adapter is considered infallible for inspection purposes.
+	 */
+	readonly __errorTags?: readonly string[];
 }
 export type InferPlaceholder = Port<string, unknown>;
 export type LifetimePlaceholder = Lifetime;
@@ -1039,6 +1099,7 @@ export type AdapterProvidesShape<TProvides> = {
 	readonly lifetime: string;
 	readonly factoryKind: FactoryKind;
 	readonly clonable: boolean;
+	readonly freeze: boolean;
 };
 /**
  * Extracts the **Port type** from an Adapter's \`provides\` property.
@@ -1178,6 +1239,28 @@ export type InferClonable<TAdapter> = TAdapter extends Adapter<InferPlaceholder,
  * \`\`\`
  */
 export type IsClonableAdapter<TAdapter> = InferClonable<TAdapter> extends true ? true : false;
+/**
+ * Extracts the freeze configuration from an adapter type.
+ *
+ * Returns the \`freeze\` property type from the adapter.
+ * - \`true\` means the resolved service will be \`Object.freeze()\`d (default)
+ * - \`false\` means the resolved service will be returned as-is (mutable)
+ *
+ * @typeParam TAdapter - The adapter type to extract from
+ * @returns \`true\` or \`false\` based on the adapter's freeze config, defaults to \`true\`
+ *
+ * @example
+ * \`\`\`typescript
+ * const FrozenAdapter = createAdapter({ provides: LoggerPort, factory: () => ({ log: () => {} }) });
+ * type IsFrozen = InferFreeze<typeof FrozenAdapter>; // true
+ *
+ * const MutableAdapter = createAdapter({ provides: CachePort, factory: () => new Map(), freeze: false });
+ * type IsFrozenMut = InferFreeze<typeof MutableAdapter>; // false
+ * \`\`\`
+ */
+export type InferFreeze<TAdapter> = TAdapter extends {
+	readonly freeze: infer TFreeze;
+} ? TFreeze : true;
 /**
  * Config types and error types for unified createAdapter API.
  *
@@ -1352,11 +1435,44 @@ export interface BaseUnifiedConfig<TProvides extends Port<string, unknown>, TReq
 	 */
 	readonly clonable?: boolean;
 	/**
+	 * Whether the resolved service instance should be \`Object.freeze()\`d before injection.
+	 *
+	 * When \`true\` (or omitted, the default), the container applies \`Object.freeze()\`
+	 * to the service instance after factory invocation, before returning it to consumers.
+	 * This prevents capability tampering where one consumer modifies a shared service.
+	 *
+	 * When \`false\`, the service instance is returned as-is (mutable). Use this for
+	 * services that require mutable internal state (e.g., connection pools, caches).
+	 *
+	 * @remarks
+	 * Freeze is shallow only (consistent with Result/Option freeze behavior).
+	 *
+	 * @default true
+	 */
+	readonly freeze?: boolean;
+	/**
 	 * Optional cleanup function called during disposal.
 	 *
 	 * @param instance - The service instance being disposed
 	 */
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	/**
+	 * Optional runtime metadata listing the \`_tag\` values of error types
+	 * this adapter's factory may produce.
+	 *
+	 * Used by graph inspection to compute transitive error profiles per port.
+	 * When omitted, the adapter is considered infallible for inspection purposes.
+	 *
+	 * @example
+	 * \`\`\`typescript
+	 * const dbAdapter = createAdapter({
+	 *   provides: DatabasePort,
+	 *   factory: (): Result<Database, DbError> => { ... },
+	 *   errorTags: ["ConnectionError"],
+	 * });
+	 * \`\`\`
+	 */
+	readonly errorTags?: readonly string[];
 }
 /**
  * Factory variant config with factory function.
@@ -1439,6 +1555,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, T
 	readonly provides: TProvides;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 	lifetime?: undefined;
 	clonable?: undefined;
@@ -1459,6 +1577,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly requires: TRequires;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	lifetime?: undefined;
 	clonable?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, IsAsyncFactory<TFactory> extends true ? Async : Sync, False, TRequires, InferFactoryError<ReturnType<TFactory>>>;
@@ -1483,6 +1603,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly lifetime: TLifetime;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 	clonable?: undefined;
 }): Adapter<TProvides, never, EnforceAsyncLifetime<TFactory, TLifetime>, IsAsyncFactory<TFactory> extends true ? Async : Sync, False, EmptyRequires, InferFactoryError<ReturnType<TFactory>>>;
@@ -1509,6 +1631,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly lifetime: TLifetime;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	clonable?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, EnforceAsyncLifetime<TFactory, TLifetime>, IsAsyncFactory<TFactory> extends true ? Async : Sync, False, TRequires, InferFactoryError<ReturnType<TFactory>>>;
 /**
@@ -1527,6 +1651,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly clonable: TClonable;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 	lifetime?: undefined;
 }): Adapter<TProvides, never, Singleton, IsAsyncFactory<TFactory> extends true ? Async : Sync, TClonable, EmptyRequires, InferFactoryError<ReturnType<TFactory>>>;
@@ -1548,6 +1674,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly clonable: TClonable;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	lifetime?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, IsAsyncFactory<TFactory> extends true ? Async : Sync, TClonable, TRequires, InferFactoryError<ReturnType<TFactory>>>;
 /**
@@ -1573,6 +1701,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly clonable: TClonable;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 }): Adapter<TProvides, never, EnforceAsyncLifetime<TFactory, TLifetime>, IsAsyncFactory<TFactory> extends true ? Async : Sync, TClonable, EmptyRequires, InferFactoryError<ReturnType<TFactory>>>;
 /**
@@ -1599,6 +1729,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly clonable: TClonable;
 	readonly factory: TFactory;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 }): Adapter<TProvides, TupleToUnion<TRequires>, EnforceAsyncLifetime<TFactory, TLifetime>, IsAsyncFactory<TFactory> extends true ? Async : Sync, TClonable, TRequires, InferFactoryError<ReturnType<TFactory>>>;
 /**
  * Creates an adapter from a class constructor with all defaults.
@@ -1623,6 +1755,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, T
 	readonly provides: TProvides;
 	readonly class: TClass;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 	lifetime?: undefined;
 	clonable?: undefined;
@@ -1653,6 +1787,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly requires: TRequires;
 	readonly class: TClass;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	lifetime?: undefined;
 	clonable?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, Sync, False, TRequires>;
@@ -1681,6 +1817,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly class: TClass;
 	readonly lifetime: TLifetime;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 	clonable?: undefined;
 }): Adapter<TProvides, never, TLifetime, Sync, False, EmptyRequires>;
@@ -1712,6 +1850,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly class: TClass;
 	readonly lifetime: TLifetime;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	clonable?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, Sync, False, TRequires>;
 /**
@@ -1739,6 +1879,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly class: TClass;
 	readonly clonable: TClonable;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 	lifetime?: undefined;
 }): Adapter<TProvides, never, Singleton, Sync, TClonable, EmptyRequires>;
@@ -1770,6 +1912,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly class: TClass;
 	readonly clonable: TClonable;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	lifetime?: undefined;
 }): Adapter<TProvides, TupleToUnion<TRequires>, Singleton, Sync, TClonable, TRequires>;
 /**
@@ -1799,6 +1943,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly lifetime: TLifetime;
 	readonly clonable: TClonable;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 	requires?: undefined;
 }): Adapter<TProvides, never, TLifetime, Sync, TClonable, EmptyRequires>;
 /**
@@ -1831,6 +1977,8 @@ export declare function createAdapter<TProvides extends Port<string, unknown>, c
 	readonly lifetime: TLifetime;
 	readonly clonable: TClonable;
 	readonly finalizer?: (instance: InferService<TProvides>) => void | Promise<void>;
+	readonly freeze?: boolean;
+	readonly errorTags?: readonly string[];
 }): Adapter<TProvides, TupleToUnion<TRequires>, TLifetime, Sync, TClonable, TRequires>;
 /**
  * Wraps a fallible adapter so that \`Err\` results are thrown as exceptions.
@@ -1883,6 +2031,155 @@ export declare function adapterOrElse<TProvides, TRequires1, TLifetime1 extends 
 	...TRequiresTuple1,
 	...TRequiresTuple2
 ], never>;
+/**
+ * Wraps a fallible adapter with tag-selective error handlers.
+ *
+ * Takes an adapter whose factory returns \`Result<T, E>\` where \`E\` has a \`_tag\`
+ * discriminant, and a partial handler map keyed by tag values. When the factory
+ * returns \`Err\`, if the error's \`_tag\` matches a handler key, that handler is
+ * called and its \`Ok\` result is unwrapped. Unhandled tags propagate as \`Err\`.
+ *
+ * The returned adapter's \`TError\` is narrowed to exclude only the handled tags.
+ * Handlers are partial — you can handle some error variants and let others propagate.
+ *
+ * @example
+ * \`\`\`typescript
+ * type MyErrors =
+ *   | { _tag: "ConfigMissing"; path: string }
+ *   | { _tag: "ConnectionFailed"; reason: string }
+ *   | { _tag: "AuthError"; code: number };
+ *
+ * const FallibleAdapter = createAdapter({
+ *   provides: ServicePort,
+ *   factory: (): FactoryResult<Service, MyErrors> => { ... },
+ * });
+ *
+ * // Handle some errors, let AuthError propagate
+ * const PartiallyHandled = adapterOrHandle(FallibleAdapter, {
+ *   ConfigMissing: () => ({ _tag: "Ok", value: defaultService }),
+ *   ConnectionFailed: () => ({ _tag: "Ok", value: fallbackService }),
+ * });
+ * // PartiallyHandled has TError = { _tag: "AuthError"; code: number }
+ * \`\`\`
+ */
+export declare function adapterOrHandle<TProvides, TRequires, TLifetime extends string, TFactoryKind extends FactoryKind, TClonable extends boolean, TRequiresTuple extends readonly unknown[], TError extends {
+	_tag: string;
+}, Handlers extends Partial<{
+	[K in TError["_tag"]]: (error: Extract<TError, {
+		_tag: K;
+	}>) => FactoryResult<InferService<TProvides>, never>;
+}>>(adapter: Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable, TRequiresTuple, TError>, handlers: Handlers): Adapter<TProvides, TRequires, TLifetime, TFactoryKind, TClonable, TRequiresTuple, Exclude<TError, {
+	_tag: keyof Handlers & string;
+}>>;
+/**
+ * Branded error type for missing operations in an adapter factory.
+ *
+ * Appears in IDE tooltips when an adapter's factory does not implement
+ * all methods declared by the port interface.
+ *
+ * @typeParam TPortName - The name of the port with missing operations
+ * @typeParam TMissing - Union of missing operation keys
+ *
+ * @example IDE tooltip
+ * \`\`\`
+ * {
+ *   readonly __inferenceError: true;
+ *   readonly __source: "VerifyOperationCompleteness";
+ *   readonly __message: "Adapter factory is missing operations required by port 'UserService'";
+ *   readonly __portName: "UserService";
+ *   readonly __missingOperations: "createUser" | "deleteUser";
+ * }
+ * \`\`\`
+ */
+export type MissingOperationsError<TPortName extends string, TMissing> = {
+	readonly __inferenceError: true;
+	readonly __source: "VerifyOperationCompleteness";
+	readonly __message: \`Adapter factory is missing operations required by port '\${TPortName}'\`;
+	readonly __portName: TPortName;
+	readonly __missingOperations: TMissing;
+};
+/**
+ * Verifies that a factory return type implements all operations of the port service interface.
+ *
+ * ## Algorithm
+ *
+ * 1. Extract the port's service interface \`TService\` from \`TProvides\`
+ * 2. Compute \`Exclude<keyof TService, keyof TFactoryReturn>\` -- the missing operations
+ * 3. If the exclusion is \`never\`, all operations are present -- returns \`true\`
+ * 4. Otherwise, returns \`MissingOperationsError\` listing the missing operations
+ *
+ * ## Behavior Table
+ *
+ * | Port Interface | Factory Return | Result |
+ * |---------------|---------------|--------|
+ * | \`{ get(): T; set(v: T): void }\` | \`{ get(): T; set(v: T): void }\` | \`true\` |
+ * | \`{ get(): T; set(v: T): void }\` | \`{ get(): T }\` | \`MissingOperationsError<..., "set">\` |
+ * | \`{ get(): T; set(v: T): void }\` | \`{ get(): T; set(v: T): void; extra(): void }\` | \`true\` (superset allowed) |
+ * | \`{ get(): T }\` | \`{}\` | \`MissingOperationsError<..., "get">\` |
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TFactoryReturn - The return type of the factory function (unwrapped from Result/Promise)
+ */
+/**
+ * Extracts only the required keys from a type (excludes optional properties).
+ */
+export type RequiredKeys<T> = {
+	[K in keyof T]-?: undefined extends T[K] ? never : K;
+}[keyof T];
+export type VerifyOperationCompleteness<TProvides extends Port<string, unknown>, TFactoryReturn> = [
+	TFactoryReturn
+] extends [
+	never
+] ? true : [
+	RequiredKeys<InferService<TProvides>>
+] extends [
+	never
+] ? true : Exclude<RequiredKeys<InferService<TProvides>>, keyof TFactoryReturn> extends never ? true : MissingOperationsError<InferPortName<TProvides> & string, Exclude<RequiredKeys<InferService<TProvides>>, keyof TFactoryReturn>>;
+/**
+ * Checks if a \`VerifyOperationCompleteness\` result is an error.
+ *
+ * @typeParam T - The result of \`VerifyOperationCompleteness\`
+ * @returns \`true\` if T is a \`MissingOperationsError\`, \`false\` otherwise
+ */
+export type IsMissingOperationsError<T> = T extends {
+	readonly __inferenceError: true;
+	readonly __source: "VerifyOperationCompleteness";
+} ? true : false;
+/**
+ * Unwraps the "Ok" value type from a factory return type.
+ *
+ * Handles:
+ * - Plain \`T\` returns -- returns \`T\`
+ * - \`Promise<T>\` -- unwraps to \`T\`
+ * - \`PromiseLike<T>\` -- unwraps to \`T\`
+ * - \`{ _tag: "Ok"; value: T } | { _tag: "Err"; error: E }\` -- extracts \`T\`
+ * - \`Promise<{ _tag: "Ok"; value: T } | ...>\` -- extracts \`T\`
+ * - \`PromiseLike<{ _tag: "Ok"; value: T } | ...>\` -- extracts \`T\`
+ *
+ * @typeParam TReturn - The factory function's return type
+ */
+export type UnwrapFactoryOk<TReturn> = [
+	TReturn
+] extends [
+	never
+] ? never : TReturn extends Promise<infer TInner> ? UnwrapFactoryOk<TInner> : TReturn extends PromiseLike<infer TInner> ? UnwrapFactoryOk<TInner> : TReturn extends {
+	readonly _tag: "Ok";
+	readonly value: infer T;
+} ? T : TReturn extends {
+	readonly _tag: "Err";
+} ? never : TReturn;
+/**
+ * Wraps an Adapter return type with operation completeness verification.
+ *
+ * If the factory return type implements all operations of the port service interface,
+ * returns the Adapter type as-is. Otherwise, returns the \`MissingOperationsError\`
+ * which produces a clear compile-time error naming the missing methods.
+ *
+ * @typeParam TProvides - The port being implemented
+ * @typeParam TFactory - The factory function type (used to extract return type)
+ * @typeParam TAdapter - The Adapter type to return if completeness passes
+ */
+export type AdapterWithCompletenessCheck<TProvides extends Port<string, unknown>, TFactory extends (...args: never[]) => unknown, TAdapter> = VerifyOperationCompleteness<TProvides, UnwrapFactoryOk<ReturnType<TFactory>>> extends true ? TAdapter : VerifyOperationCompleteness<TProvides, UnwrapFactoryOk<ReturnType<TFactory>>>;
 declare const __originalPort: unique symbol;
 /**
  * A lazy wrapper port that provides a thunk \`() => T\` instead of \`T\`.
@@ -2025,6 +2322,7 @@ export declare function isFactoryKind(value: unknown): value is FactoryKind;
  * - \`factoryKind\`: Must be a valid FactoryKind value
  * - \`factory\`: Must be a function
  * - \`clonable\`: Must be a boolean
+ * - \`freeze\`: Must be a boolean
  *
  * @param value - The value to check
  * @returns \`true\` if the value conforms to AdapterConstraint
@@ -2041,6 +2339,27 @@ export declare function isFactoryKind(value: unknown): value is FactoryKind;
  * \`\`\`
  */
 export declare function isAdapter(value: unknown): value is AdapterConstraint;
+/**
+ * Gets the freeze configuration from an adapter.
+ *
+ * Returns the adapter's \`freeze\` property value, which controls whether
+ * resolved service instances are \`Object.freeze()\`d before injection.
+ *
+ * @param adapter - The adapter to read freeze config from
+ * @returns \`true\` if the adapter's services should be frozen (default), \`false\` if they should be mutable
+ *
+ * @example
+ * \`\`\`typescript
+ * const adapter = createAdapter({
+ *   provides: CachePort,
+ *   factory: () => new Map(),
+ *   freeze: false,
+ * });
+ *
+ * getAdapterFreezeConfig(adapter); // false
+ * \`\`\`
+ */
+export declare function getAdapterFreezeConfig(adapter: AdapterConstraint): boolean;
 /**
  * Checks if an adapter is frozen (integrity verified).
  *
@@ -2061,6 +2380,1101 @@ export declare function isAdapterFrozen(adapter: AdapterConstraint): boolean;
  * @throws {TypeError} If the adapter is not frozen
  */
 export declare function assertAdapterFrozen(adapter: AdapterConstraint): void;
+/**
+ * The five lifecycle phases an adapter handle can be in.
+ *
+ * The linear flow is:
+ * \`"created"\` → \`"initialized"\` → \`"active"\` → \`"disposing"\` → \`"disposed"\`
+ *
+ * - \`"created"\`: Handle exists but is not yet initialized
+ * - \`"initialized"\`: Handle has been initialized (dependencies resolved)
+ * - \`"active"\`: Handle is active and the \`service\` property is accessible
+ * - \`"disposing"\`: Internal state during disposal (not externally observable)
+ * - \`"disposed"\`: Terminal state — no further transitions
+ */
+export type AdapterLifecycleState = "created" | "initialized" | "active" | "disposing" | "disposed";
+/**
+ * Conditionally types a method based on the current lifecycle state.
+ *
+ * When \`TState extends TAllowed\`, the method has its full \`TSignature\`.
+ * Otherwise, the method is \`never\`, making it uncallable (a type error).
+ *
+ * @typeParam TState - The current lifecycle state
+ * @typeParam TAllowed - The state(s) in which this method is available
+ * @typeParam TSignature - The method's type signature when available
+ *
+ * @example
+ * \`\`\`ts
+ * type InitMethod = StateGuardedMethod<"created", "created", () => Promise<void>>;
+ * // InitMethod = () => Promise<void>
+ *
+ * type InitMethodWrong = StateGuardedMethod<"active", "created", () => Promise<void>>;
+ * // InitMethodWrong = never
+ * \`\`\`
+ */
+export type StateGuardedMethod<TState extends AdapterLifecycleState, TAllowed extends AdapterLifecycleState, TSignature> = TState extends TAllowed ? TSignature : never;
+/**
+ * Maps each lifecycle state to its sole valid successor state.
+ *
+ * The transition graph is strictly linear:
+ * - \`"created"\` → \`"initialized"\`
+ * - \`"initialized"\` → \`"active"\`
+ * - \`"active"\` → \`"disposing"\`
+ * - \`"disposing"\` → \`"disposed"\`
+ * - \`"disposed"\` → \`never\` (terminal — no further transitions)
+ *
+ * @typeParam TFrom - The current lifecycle state
+ */
+export type ValidTransition<TFrom extends AdapterLifecycleState> = TFrom extends "created" ? "initialized" : TFrom extends "initialized" ? "active" : TFrom extends "active" ? "disposing" : TFrom extends "disposing" ? "disposed" : never;
+/**
+ * Boolean check for whether a transition from \`TFrom\` to \`TTo\` is valid.
+ *
+ * Evaluates to \`true\` if the transition is allowed, \`false\` otherwise.
+ *
+ * @typeParam TFrom - The current lifecycle state
+ * @typeParam TTo - The target lifecycle state
+ *
+ * @example
+ * \`\`\`ts
+ * type Ok = CanTransition<"created", "initialized">;  // true
+ * type Bad = CanTransition<"created", "active">;       // false
+ * type Back = CanTransition<"active", "created">;      // false
+ * \`\`\`
+ */
+export type CanTransition<TFrom extends AdapterLifecycleState, TTo extends AdapterLifecycleState> = TTo extends ValidTransition<TFrom> ? true : false;
+/**
+ * A lifecycle-tracked adapter handle with phantom state branding.
+ *
+ * Adapter handles carry a phantom \`TState\` parameter encoding the current
+ * lifecycle phase. Methods are conditionally available based on state:
+ *
+ * | State         | \`initialize()\` | \`activate()\` | \`service\` | \`dispose()\` |
+ * |---------------|----------------|--------------|-----------|-------------|
+ * | \`"created"\`   | Available      | \`never\`      | \`never\`   | \`never\`     |
+ * | \`"initialized"\` | \`never\`     | Available    | \`never\`   | \`never\`     |
+ * | \`"active"\`    | \`never\`        | \`never\`      | \`T\`       | Available   |
+ * | \`"disposing"\` | \`never\`        | \`never\`      | \`never\`   | \`never\`     |
+ * | \`"disposed"\`  | \`never\`        | \`never\`      | \`never\`   | \`never\`     |
+ *
+ * @typeParam T - The service type this handle wraps
+ * @typeParam TState - The current lifecycle state (phantom parameter)
+ */
+export interface AdapterHandle<T, TState extends AdapterLifecycleState = "created"> {
+	/**
+	 * Phantom brand encoding the lifecycle state at the type level.
+	 * Has no runtime representation. Optional (\`?:\`) so implementations
+	 * can construct objects without providing this property (same pattern
+	 * as \`Adapter[__adapterBrand]\`).
+	 */
+	readonly __adapterStateBrand?: TState;
+	/**
+	 * The current lifecycle state, available at runtime.
+	 */
+	readonly state: TState;
+	/**
+	 * The service instance. Only accessible when the handle is in the \`"active"\` state.
+	 * In all other states, this is \`never\`.
+	 */
+	readonly service: StateGuardedMethod<TState, "active", T>;
+	/**
+	 * Transitions the handle from \`"created"\` to \`"initialized"\`.
+	 * Only available in the \`"created"\` state.
+	 */
+	readonly initialize: StateGuardedMethod<TState, "created", () => Promise<AdapterHandle<T, "initialized">>>;
+	/**
+	 * Transitions the handle from \`"initialized"\` to \`"active"\`.
+	 * Only available in the \`"initialized"\` state.
+	 */
+	readonly activate: StateGuardedMethod<TState, "initialized", () => AdapterHandle<T, "active">>;
+	/**
+	 * Transitions the handle from \`"active"\` to \`"disposed"\`.
+	 * Only available in the \`"active"\` state.
+	 * Internally transitions through \`"disposing"\` before reaching \`"disposed"\`.
+	 */
+	readonly dispose: StateGuardedMethod<TState, "active", () => Promise<AdapterHandle<T, "disposed">>>;
+}
+/**
+ * Discriminated union classifying the type of contract violation.
+ *
+ * Each variant has a unique \`_tag\` for pattern matching via \`switch\`.
+ */
+export type BlameViolationType = {
+	readonly _tag: "FactoryError";
+	readonly error: unknown;
+} | {
+	readonly _tag: "LifetimeViolation";
+	readonly expected: string;
+	readonly actual: string;
+} | {
+	readonly _tag: "MissingDependency";
+	readonly missingPort: string;
+} | {
+	readonly _tag: "DisposalError";
+	readonly error: unknown;
+} | {
+	readonly _tag: "ContractViolation";
+	readonly details: string;
+};
+/**
+ * Structured attribution information for container errors.
+ *
+ * Identifies which adapter violated which port contract,
+ * the type of violation, and the full resolution path.
+ */
+export interface BlameContext {
+	/** The adapter factory that violated the contract. */
+	readonly adapterFactory: {
+		readonly name: string;
+		readonly sourceLocation?: string;
+	};
+	/** The port whose contract was violated. */
+	readonly portContract: {
+		readonly name: string;
+		readonly direction: PortDirection;
+	};
+	/** Classification of the violation. */
+	readonly violationType: BlameViolationType;
+	/** Resolution path from initial resolve() to failure point. */
+	readonly resolutionPath: ReadonlyArray<string>;
+}
+/**
+ * Creates a frozen \`BlameContext\` instance.
+ *
+ * Deep-freezes the blame context including nested objects.
+ *
+ * @param context - The blame context data
+ * @returns A deeply frozen \`BlameContext\`
+ */
+export declare function createBlameContext(context: BlameContext): BlameContext;
+/**
+ * Checks if a value is an object with a string \`message\` property.
+ * Used to detect error-like objects that don't extend Error.
+ */
+export declare function hasMessageProperty(value: unknown): value is {
+	message: string;
+};
+/**
+ * Extracts a human-readable error message from an unknown thrown value.
+ *
+ * Handles:
+ * 1. Standard Error instances → uses error.message
+ * 2. Objects with \`message\` property → uses the message property
+ * 3. Other values → converts to string
+ *
+ * This properly handles custom error objects that have a \`message\` property
+ * but don't extend Error (e.g., from external libraries or serialized errors).
+ */
+export declare function extractErrorMessage(cause: unknown): string;
+/**
+ * Abstract base class for all container-related errors.
+ *
+ * Provides a consistent structure for error handling with:
+ * - \`code\`: A stable string constant for programmatic error identification
+ * - \`isProgrammingError\`: Indicates whether this error represents a programming
+ *   mistake (true) or a runtime condition (false)
+ * - \`blame\`: Optional blame context identifying which adapter violated which contract
+ *
+ * @remarks
+ * - All concrete error classes must extend this base class
+ * - The \`name\` getter returns the concrete class name for stack traces
+ * - Uses \`Error.captureStackTrace\` when available for cleaner stack traces
+ *
+ * @example
+ * \`\`\`typescript
+ * try {
+ *   container.resolve(SomePort);
+ * } catch (error) {
+ *   if (error instanceof ContainerError) {
+ *     console.log(\`Error code: \${error.code}\`);
+ *     if (error.blame) {
+ *       console.log(\`Blame: \${error.blame.adapterFactory.name}\`);
+ *     }
+ *   }
+ * }
+ * \`\`\`
+ */
+export declare abstract class ContainerError extends Error {
+	/**
+	 * A stable string constant identifying the error type.
+	 * Suitable for programmatic error handling and logging.
+	 */
+	abstract readonly code: string;
+	/**
+	 * Indicates whether this error represents a programming mistake.
+	 *
+	 * - \`true\`: The error is caused by incorrect usage (e.g., circular dependency,
+	 *   resolving from disposed scope, missing scope). These should be fixed in code.
+	 * - \`false\`: The error is caused by runtime conditions (e.g., factory threw).
+	 *   These may be recoverable or require operational handling.
+	 */
+	abstract readonly isProgrammingError: boolean;
+	/**
+	 * Optional blame context identifying which adapter violated which port contract.
+	 *
+	 * When present, the blame context is always frozen.
+	 *
+	 * @see {@link BlameContext}
+	 */
+	readonly blame?: BlameContext;
+	/**
+	 * Creates a new ContainerError instance.
+	 *
+	 * @param message - The error message describing what went wrong
+	 * @param blame - Optional blame context for error attribution
+	 */
+	constructor(message: string, blame?: BlameContext);
+	/**
+	 * Returns the concrete class name for this error.
+	 * Used in stack traces and error logging.
+	 */
+	get name(): string;
+}
+/**
+ * Error thrown when an invalid adapter lifecycle state transition is attempted at runtime.
+ *
+ * This is a safety net for aliased references — the type system prevents most
+ * invalid transitions at compile time, but runtime checks catch edge cases where
+ * stale references are used.
+ */
+export declare class InvalidTransitionError extends ContainerError {
+	readonly _tag: "InvalidTransition";
+	readonly code: "INVALID_TRANSITION";
+	readonly isProgrammingError: true;
+	/** The state the handle was in when the transition was attempted. */
+	readonly fromState: AdapterLifecycleState;
+	/** The target state that was rejected. */
+	readonly toState: AdapterLifecycleState;
+	constructor(from: AdapterLifecycleState, to: AdapterLifecycleState);
+}
+/**
+ * Asserts that a state transition is valid at runtime.
+ * Throws \`InvalidTransitionError\` if the transition is not allowed.
+ *
+ * @param from - The current lifecycle state
+ * @param to - The desired target state
+ * @throws InvalidTransitionError if the transition is invalid
+ */
+export declare function assertTransition(from: AdapterLifecycleState, to: AdapterLifecycleState): void;
+/**
+ * Configuration for creating an adapter handle.
+ *
+ * @typeParam T - The service type
+ */
+export interface AdapterHandleConfig<T> {
+	/** Async initialization logic (called during \`initialize()\`). */
+	readonly onInitialize?: () => Promise<void>;
+	/** Produces the service instance (called during \`activate()\`). */
+	readonly getService: () => T;
+	/** Cleanup logic (called during \`dispose()\`). */
+	readonly onDispose?: () => Promise<void>;
+}
+/**
+ * Creates a new \`AdapterHandle\` in the \`"created"\` state.
+ *
+ * The returned handle is frozen and follows the session types pattern:
+ * each transition method returns a new handle in the next state.
+ *
+ * @typeParam T - The service type
+ * @param config - Configuration controlling initialization, service access, and disposal
+ * @returns A frozen \`AdapterHandle<T, "created">\`
+ *
+ * @example
+ * \`\`\`ts
+ * const handle = createAdapterHandle<MyService>({
+ *   getService: () => myServiceInstance,
+ *   onDispose: async () => { await myServiceInstance.close(); },
+ * });
+ *
+ * const initialized = await handle.initialize();
+ * const active = initialized.activate();
+ * const svc = active.service; // MyService
+ * const disposed = await active.dispose();
+ * \`\`\`
+ */
+export declare function createAdapterHandle<T>(config: AdapterHandleConfig<T>): AdapterHandle<T, "created">;
+declare const __servicePhantom: unique symbol;
+declare const __constraintsPhantom: unique symbol;
+/**
+ * A constraint on a single method of a capability.
+ *
+ * Method constraints describe policy restrictions that must be satisfied
+ * before a method can be invoked.
+ */
+export interface MethodConstraint {
+	readonly _tag: string;
+	readonly description: string;
+}
+/**
+ * Map of method names to their constraint predicates.
+ *
+ * @typeParam TService - The service interface whose methods can be constrained
+ */
+export type CapabilityConstraints<TService> = {
+	readonly [K in keyof TService]?: MethodConstraint;
+};
+/**
+ * A capability token - a port reference IS a capability.
+ *
+ * Capabilities are branded tokens that carry a name and a phantom service type.
+ * They serve as compile-time contracts for what a component can do.
+ *
+ * @typeParam TName - The literal string name of this capability
+ * @typeParam TService - The service interface type (phantom type)
+ */
+export interface Capability<TName extends string, TService> {
+	readonly __capabilityBrand: TName;
+	readonly __servicePhantom: TService;
+	readonly name: TName;
+}
+/**
+ * A constrained capability - a capability with policy restrictions.
+ *
+ * Constrained capabilities carry additional type-level information about
+ * which methods have policy constraints that must be satisfied.
+ *
+ * @typeParam TName - The literal string name of this capability
+ * @typeParam TService - The service interface type (phantom type)
+ * @typeParam TConstraints - Map of method names to their constraints
+ */
+export interface ConstrainedCapability<TName extends string, TService, TConstraints> {
+	readonly __constrainedCapabilityBrand: TName;
+	readonly __servicePhantom: TService;
+	readonly __constraintsPhantom: TConstraints;
+	readonly name: TName;
+	readonly _brand: "ConstrainedCapability";
+	readonly _constraints: TConstraints;
+}
+/**
+ * Extract the service type from a capability.
+ *
+ * @typeParam C - A Capability or ConstrainedCapability type
+ * @returns The service interface type, or \`never\` if C is not a capability
+ */
+export type ServiceOf<C> = C extends {
+	readonly __servicePhantom: infer S;
+} ? S : never;
+/**
+ * Extract the name from a capability.
+ *
+ * @typeParam C - A Capability or ConstrainedCapability type
+ * @returns The name literal type, or \`never\` if C is not a capability
+ */
+export type NameOf<C> = C extends Capability<infer N, unknown> ? N : C extends ConstrainedCapability<infer N, unknown, unknown> ? N : never;
+/**
+ * Check if a capability has constraints.
+ *
+ * @typeParam C - A Capability or ConstrainedCapability type
+ * @returns \`true\` if C is a ConstrainedCapability, \`false\` otherwise
+ */
+export type IsConstrained<C> = C extends ConstrainedCapability<string, unknown, unknown> ? true : false;
+/**
+ * Extract constraints from a constrained capability.
+ *
+ * @typeParam C - A ConstrainedCapability type
+ * @returns The constraints map, or \`never\` if C is not constrained
+ */
+export type ConstraintsOf<C> = C extends ConstrainedCapability<string, unknown, infer Cs> ? Cs : never;
+/**
+ * Helper type that finds missing capabilities from a required list
+ * against a provided list.
+ *
+ * @internal
+ */
+export type FindMissing<Required extends ReadonlyArray<Capability<string, unknown>>, Provided extends ReadonlyArray<Capability<string, unknown>>> = {
+	[I in keyof Required]: Required[I] extends Capability<infer N, unknown> ? N extends NameOf<Provided[number]> ? never : {
+		readonly _error: "MISSING_CAPABILITY";
+		readonly name: N;
+	} : never;
+}[number];
+/**
+ * Verify that all capabilities in a requirements list are available.
+ *
+ * Returns \`true\` if all required capabilities are provided, or an error type
+ * describing the missing capabilities.
+ *
+ * @typeParam Required - Tuple of required capability tokens
+ * @typeParam Provided - Tuple of provided capability tokens
+ * @returns \`true\` if satisfied, or \`{ _error: "MISSING_CAPABILITY"; name: string }\` for each missing capability
+ */
+export type CapabilitiesAvailable<Required extends ReadonlyArray<Capability<string, unknown>>, Provided extends ReadonlyArray<Capability<string, unknown>>> = Extract<FindMissing<Required, Provided>, {
+	readonly _error: string;
+}> extends never ? true : Extract<FindMissing<Required, Provided>, {
+	readonly _error: string;
+}>;
+/**
+ * Create a frozen method constraint.
+ *
+ * @param tag - A discriminator tag for the constraint type (e.g., "permission", "role")
+ * @param description - Human-readable description of the constraint
+ * @returns A frozen MethodConstraint object
+ */
+export declare function methodConstraint(tag: string, description: string): MethodConstraint;
+/**
+ * Create a constrained capability from a name and constraint map.
+ *
+ * The service type is carried as a phantom type parameter and has
+ * no runtime representation. Supply \`TName\` and \`TService\` explicitly;
+ * \`TConstraints\` is inferred from the constraints argument.
+ *
+ * @typeParam TName - The literal string name of the capability
+ * @typeParam TService - The service interface type (phantom)
+ * @param name - The capability name
+ * @param constraints - A map of method names to their constraints
+ * @returns A frozen ConstrainedCapability token
+ *
+ * @example
+ * \`\`\`typescript
+ * const cap = constrainCapability<"Payment", PaymentService>(
+ *   "Payment",
+ *   { charge: methodConstraint("permission", "billing:charge") },
+ * );
+ * \`\`\`
+ */
+export declare function constrainCapability<TName extends string, TService>(name: TName, constraints: Partial<Record<keyof TService & string, MethodConstraint>>): ConstrainedCapability<TName, TService, typeof constraints>;
+/**
+ * A method-constraint pair extracted from a constrained capability.
+ */
+export interface ConstrainedMethodEntry {
+	readonly method: string;
+	readonly constraint: MethodConstraint;
+}
+/**
+ * List all constrained methods of a capability.
+ *
+ * @param capability - A constrained capability to inspect
+ * @returns A frozen array of method-constraint pairs
+ */
+export declare function getConstrainedMethods(capability: ConstrainedCapability<string, unknown, Record<string, MethodConstraint | undefined>>): ReadonlyArray<ConstrainedMethodEntry>;
+/**
+ * Inheritance mode for child containers.
+ * - shared: Child shares parent's singleton instance (live reference)
+ * - forked: Child gets a snapshot copy of parent's instance
+ * - isolated: Child creates its own fresh instance
+ */
+export type InheritanceMode = "shared" | "forked" | "isolated";
+/**
+ * Origin of a service in a container.
+ * - own: Service is defined in the current container (new local adapter)
+ * - inherited: Service is inherited from a parent container
+ * - overridden: Service replaces a parent adapter (child override)
+ */
+export type ServiceOrigin = "own" | "inherited" | "overridden";
+/**
+ * Container type discriminant for type-safe snapshot handling.
+ */
+export type ContainerKind = "root" | "child" | "lazy" | "scope";
+/**
+ * Phantom type parameter for tracking container disposal state at the type level.
+ *
+ * Used as a phantom type parameter on Container and Scope to encode lifecycle
+ * state transitions. When \`"active"\`, resolution methods are available. When
+ * \`"disposed"\`, resolution methods become \`never\` (type error to call them).
+ *
+ * This is separate from {@link ContainerPhase} which tracks detailed inspection
+ * phases across all container types. \`DisposalPhase\` is specifically for
+ * compile-time prevention of resolve-after-dispose via phantom type parameters.
+ *
+ * @see ADR-CO-003 for the design decision behind disposal state phantom types
+ * @see BEH-CO-07 for the behavior specification
+ */
+export type DisposalPhase = "active" | "disposed";
+/**
+ * Container phase states across all container types.
+ *
+ * Different container types have different valid phases:
+ * - Root: "uninitialized" | "initialized" | "disposing" | "disposed"
+ * - Child: "initialized" | "disposing" | "disposed" (inherits init from parent)
+ * - Lazy: "unloaded" | "loading" | "loaded" | "disposing" | "disposed"
+ * - Scope: "active" | "disposing" | "disposed"
+ */
+export type ContainerPhase = "uninitialized" | "initialized" | "unloaded" | "loading" | "loaded" | "active" | "disposing" | "disposed";
+/**
+ * Information about a resolved singleton.
+ */
+export interface SingletonEntry {
+	/** Port name of the singleton */
+	readonly portName: string;
+	/** Timestamp when the singleton was resolved */
+	readonly resolvedAt: number;
+	/** Whether the singleton is currently resolved (has cached instance) */
+	readonly isResolved: boolean;
+}
+/**
+ * Information about an active scope.
+ */
+export interface ScopeInfo {
+	readonly id: string;
+	readonly parentId: string | null;
+	readonly childIds: readonly string[];
+	readonly resolvedPorts: readonly string[];
+	readonly createdAt: number;
+	readonly isActive: boolean;
+}
+/**
+ * Hierarchical tree structure for scopes.
+ */
+export interface ScopeTree {
+	readonly id: string;
+	readonly status: "active" | "disposed";
+	readonly resolvedCount: number;
+	readonly totalCount: number;
+	readonly children: readonly ScopeTree[];
+	/** Port names of resolved services in this scope */
+	readonly resolvedPorts: readonly string[];
+}
+/**
+ * Base snapshot fields shared by all container types.
+ */
+export interface ContainerSnapshotBase {
+	readonly singletons: readonly SingletonEntry[];
+	readonly scopes: ScopeTree;
+	readonly isDisposed: boolean;
+	/** Human-readable container name for DevTools display */
+	readonly containerName: string;
+}
+/**
+ * Root container snapshot.
+ *
+ * Root containers are created via \`createContainer(graph)\` and own
+ * the dependency graph. They manage async adapter initialization.
+ */
+export interface RootContainerSnapshot extends ContainerSnapshotBase {
+	readonly kind: "root";
+	readonly phase: "uninitialized" | "initialized" | "disposing" | "disposed";
+	readonly isInitialized: boolean;
+	readonly asyncAdaptersTotal: number;
+	readonly asyncAdaptersInitialized: number;
+}
+/**
+ * Child container snapshot.
+ *
+ * Child containers are created via \`container.createChild(graph)\` and
+ * extend or override the parent's adapters.
+ */
+export interface ChildContainerSnapshot extends ContainerSnapshotBase {
+	readonly kind: "child";
+	readonly phase: "initialized" | "disposing" | "disposed";
+	readonly parentId: string;
+	/** Per-port inheritance modes (port name -> mode). Defaults to 'shared' if not specified. */
+	readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
+}
+/**
+ * Lazy container snapshot.
+ *
+ * Lazy containers are created via \`container.createLazyChild(loader)\` and
+ * defer graph loading until first use.
+ */
+export interface LazyContainerSnapshot extends ContainerSnapshotBase {
+	readonly kind: "lazy";
+	readonly phase: "unloaded" | "loading" | "loaded" | "disposing" | "disposed";
+	readonly isLoaded: boolean;
+}
+/**
+ * Scope snapshot.
+ *
+ * Scopes are created via \`container.createScope()\` and provide
+ * isolated scoped service instances.
+ */
+export interface ScopeSnapshot extends ContainerSnapshotBase {
+	readonly kind: "scope";
+	readonly phase: "active" | "disposing" | "disposed";
+	readonly scopeId: string;
+	readonly parentScopeId: string | null;
+}
+/**
+ * Discriminated union of all container snapshots.
+ *
+ * Use \`snapshot.kind\` for type-safe narrowing to specific container types.
+ *
+ * @example
+ * \`\`\`typescript
+ * function handleSnapshot(snapshot: ContainerSnapshot) {
+ *   switch (snapshot.kind) {
+ *     case "root":
+ *       console.log(\`Async adapters: \${snapshot.asyncAdaptersInitialized}/\${snapshot.asyncAdaptersTotal}\`);
+ *       break;
+ *     case "lazy":
+ *       console.log(\`Loaded: \${snapshot.isLoaded}\`);
+ *       break;
+ *     case "child":
+ *       console.log(\`Inheritance modes: \${snapshot.inheritanceModes.size} configured\`);
+ *       break;
+ *     case "scope":
+ *       console.log(\`Scope ID: \${snapshot.scopeId}\`);
+ *       break;
+ *   }
+ * }
+ * \`\`\`
+ */
+export type ContainerSnapshot = RootContainerSnapshot | ChildContainerSnapshot | LazyContainerSnapshot | ScopeSnapshot;
+/** The phantom brand symbol type, exported for use in type constraints. */
+export type ScopeBrandSymbol = typeof __scopeBrand;
+/**
+ * A branded type that encodes both the service interface and the scope identity.
+ *
+ * References from different scopes are type-incompatible due to the unique symbol brand.
+ * TypeScript's structural typing is bypassed by the unique symbol, preventing
+ * cross-scope assignment.
+ *
+ * At runtime, the brand has no overhead — it is a phantom type erased at compilation.
+ *
+ * @typeParam T - The service type
+ * @typeParam TScopeId - The scope identity (literal string type)
+ *
+ * @example
+ * \`\`\`ts
+ * type RefA = ScopedRef<Logger, "req-1">;
+ * type RefB = ScopedRef<Logger, "req-2">;
+ * // RefA is NOT assignable to RefB (different scope identity)
+ * // Both RefA and RefB ARE assignable to Logger (gradual adoption)
+ * \`\`\`
+ */
+export type ScopedRef<T, TScopeId extends string> = T & {
+	readonly __scopeBrand: TScopeId;
+};
+/**
+ * Type-level predicate that checks if a type is a \`ScopedRef\`.
+ *
+ * @typeParam T - The type to check
+ */
+export type IsScopedRef<T> = T extends {
+	readonly [K in ScopeBrandSymbol]: string;
+} ? true : false;
+/**
+ * Extracts the scope identity from a \`ScopedRef\`, or \`never\` if not a scoped ref.
+ *
+ * @typeParam T - The type to extract from
+ */
+export type ExtractScopeId<T> = T extends ScopedRef<infer _S, infer TScopeId> ? TScopeId : never;
+/**
+ * Extracts the underlying service type from a \`ScopedRef\`, stripping the scope brand.
+ *
+ * @typeParam T - The scoped ref type
+ */
+export type ExtractService<T> = T extends ScopedRef<infer S, infer _TScopeId> ? S : T;
+/**
+ * A scope-aware container that brands resolved services with the scope identity.
+ *
+ * When \`TPhase\` is \`"active"\`, the \`resolve\` method returns \`ScopedRef<T, TScopeId>\`.
+ * In any other phase, \`resolve\` is \`never\` (uncallable).
+ *
+ * @typeParam TProvides - Record mapping port names to service types
+ * @typeParam TScopeId - The scope identity (literal string type)
+ * @typeParam TPhase - The container phase (defaults to \`"active"\`)
+ *
+ * @example
+ * \`\`\`ts
+ * const scopeA: ScopedContainer<{ Logger: Logger }, "req-1">;
+ * const logger = scopeA.resolve(LoggerPort);
+ * // Type: ScopedRef<Logger, "req-1">
+ * \`\`\`
+ */
+export interface ScopedContainer<TProvides, TScopeId extends string, TPhase extends ContainerPhase = "active"> {
+	/**
+	 * Resolves a service from this scope, branded with the scope identity.
+	 *
+	 * Only available when the scope is in the \`"active"\` phase.
+	 */
+	readonly resolve: TPhase extends "active" ? <N extends keyof TProvides>(port: Port<N & string, TProvides[N]>) => ScopedRef<TProvides[N], TScopeId> : never;
+	/** The scope identity string, available at runtime for debugging. */
+	readonly scopeId: TScopeId;
+}
+/**
+ * A function signature bound to a specific scope identity.
+ *
+ * Methods that accept scoped references must declare the expected scope,
+ * preventing cross-scope reference passing at compile time.
+ *
+ * @typeParam TScopeId - The scope identity this function is bound to
+ */
+export type ScopeBound<TScopeId extends string> = {
+	processInScope<T>(ref: ScopedRef<T, TScopeId>): void;
+};
+/**
+ * Recursively checks if a type contains a \`ScopedRef\` with the given scope identity.
+ *
+ * Detection is bounded to avoid TypeScript recursion limits: the depth parameter
+ * decrements on each recursive step, stopping at 0.
+ *
+ * @typeParam T - The type to check
+ * @typeParam TScopeId - The scope identity to detect
+ * @typeParam TDepth - Recursion depth counter (defaults to [1,1,1,1,1] for 5 levels)
+ */
+export type ContainsScopedRef<T, TScopeId extends string, TDepth extends ReadonlyArray<unknown> = [
+	1,
+	1,
+	1,
+	1,
+	1
+]> = TDepth extends readonly [
+] ? false : T extends {
+	readonly [K in ScopeBrandSymbol]: TScopeId;
+} ? true : T extends Promise<infer TInner> ? TDepth extends readonly [
+	unknown,
+	...infer TRest
+] ? ContainsScopedRef<TInner, TScopeId, TRest> : false : T extends ReadonlyArray<infer TItem> ? TDepth extends readonly [
+	unknown,
+	...infer TRest
+] ? ContainsScopedRef<TItem, TScopeId, TRest> : false : T extends Record<string, unknown> ? TDepth extends readonly [
+	unknown,
+	...infer TRest
+] ? ContainsScopedRefInObject<T, TScopeId, TRest> : false : false;
+/**
+ * Checks object properties for scoped references.
+ * @internal
+ */
+export type ContainsScopedRefInObject<T extends Record<string, unknown>, TScopeId extends string, TDepth extends ReadonlyArray<unknown>> = {
+	[K in keyof T]: ContainsScopedRef<T[K], TScopeId, TDepth>;
+}[keyof T] extends false ? false : true;
+/**
+ * Validates that a callback return type does not contain scoped references.
+ *
+ * If the return type structurally matches \`ScopedRef<*, TScopeId>\` (directly or
+ * nested), a descriptive tuple-as-error-message is returned instead, causing a
+ * type error at the call site.
+ *
+ * @typeParam TResult - The callback return type to validate
+ * @typeParam TScopeId - The scope identity to check for escape
+ *
+ * @example
+ * \`\`\`ts
+ * type Ok = AssertNoEscape<number, "req-1">;
+ * // => number (no escape)
+ *
+ * type Escaped = AssertNoEscape<ScopedRef<Logger, "req-1">, "req-1">;
+ * // => ["ERROR: Scoped reference cannot escape its scope", "req-1"]
+ * \`\`\`
+ */
+export type AssertNoEscape<TResult, TScopeId extends string> = ContainsScopedRef<TResult, TScopeId> extends true ? [
+	"ERROR: Scoped reference cannot escape its scope",
+	TScopeId
+] : TResult;
+/**
+ * A callback that receives a scoped container and returns a result.
+ *
+ * The result type is validated by \`AssertNoEscape\` to prevent scoped references
+ * from escaping the callback.
+ *
+ * @typeParam TProvides - The services available in the scope
+ * @typeParam TScopeId - The scope identity
+ * @typeParam TResult - The callback return type
+ */
+export type ScopeCallback<TProvides, TScopeId extends string, TResult> = (scope: ScopedContainer<TProvides, TScopeId>) => AssertNoEscape<TResult, TScopeId>;
+/**
+ * Type signature for the \`withScope\` function.
+ *
+ * Executes a callback within a scope, ensuring scoped references cannot escape.
+ * The callback receives a \`ScopedContainer\` and its return type is validated
+ * at compile time via \`AssertNoEscape\`.
+ *
+ * @typeParam TProvides - The services available in the scope
+ * @typeParam TScopeId - The scope identity
+ * @typeParam TResult - The callback return type (must not contain scoped refs)
+ */
+export type WithScopeFn = <TProvides, TScopeId extends string, TResult>(container: ScopedContainer<TProvides, TScopeId>, callback: (scope: ScopedContainer<TProvides, TScopeId>) => AssertNoEscape<TResult, TScopeId>) => AssertNoEscape<TResult, TScopeId>;
+/**
+ * Records a cross-scope reference transfer for disposal ordering.
+ *
+ * When scope A transfers a reference to scope B, the container must ensure
+ * proper disposal ordering (B before A, or independent management).
+ *
+ * @typeParam TFrom - Source scope identity
+ * @typeParam TTo - Target scope identity
+ */
+export interface TransferRecord<TFrom extends string = string, TTo extends string = string> {
+	/** The source scope identity. */
+	readonly fromScope: TFrom;
+	/** The target scope identity. */
+	readonly toScope: TTo;
+	/** Timestamp when the transfer occurred. */
+	readonly transferredAt: number;
+	/** The port name of the transferred reference. */
+	readonly portName: string;
+}
+/**
+ * Error thrown when a scope transfer is attempted with an invalid scope state.
+ *
+ * This occurs when either the source or target scope is disposed at the time
+ * of transfer.
+ */
+export declare class ScopeTransferError extends ContainerError {
+	readonly _tag: "ScopeTransferError";
+	readonly code: "SCOPE_TRANSFER_FAILED";
+	readonly isProgrammingError: true;
+	/** The source scope identity. */
+	readonly fromScope: string;
+	/** The target scope identity. */
+	readonly toScope: string;
+	/** Which scope was in an invalid state. */
+	readonly invalidScope: "source" | "target";
+	constructor(fromScope: string, toScope: string, invalidScope: "source" | "target");
+}
+/**
+ * Type signature for the \`transferRef\` function.
+ *
+ * Re-brands a scoped reference from the source scope's identity to the target
+ * scope's identity. At runtime, the underlying service instance is unchanged —
+ * only the type-level brand is updated.
+ *
+ * @typeParam T - The service type
+ * @typeParam TFrom - Source scope identity
+ * @typeParam TTo - Target scope identity
+ */
+export type TransferRefFn = <T, TProvides, TFrom extends string, TTo extends string>(ref: ScopedRef<T, TFrom>, fromScope: ScopedContainer<TProvides, TFrom>, toScope: ScopedContainer<TProvides, TTo>) => ScopedRef<T, TTo>;
+/**
+ * Re-brands a scoped reference from the source scope to the target scope.
+ *
+ * This is the escape hatch for the scope system. The three-argument signature
+ * makes cross-scope transfers visible in code review.
+ *
+ * At runtime, the underlying service instance is returned unchanged — the brand
+ * is a phantom type with no runtime representation.
+ *
+ * @param ref - The scoped reference to transfer
+ * @param _fromScope - The source scope (used for type-level validation)
+ * @param _toScope - The target scope (used for type-level validation)
+ * @returns The same service instance branded with the target scope's identity
+ *
+ * @example
+ * \`\`\`ts
+ * const parentDb = parentScope.resolve(DBPort);
+ * // Type: ScopedRef<Database, "parent">
+ *
+ * const childDb = transferRef(parentDb, parentScope, childScope);
+ * // Type: ScopedRef<Database, "child">
+ * \`\`\`
+ */
+export declare function transferRef<T, TProvides, TFrom extends string, TTo extends string>(ref: ScopedRef<T, TFrom>, _fromScope: ScopedContainer<TProvides, TFrom>, _toScope: ScopedContainer<TProvides, TTo>): ScopedRef<T, TTo>;
+/**
+ * Creates a frozen transfer record for tracking cross-scope reference transfers.
+ *
+ * @param fromScope - The source scope identity
+ * @param toScope - The target scope identity
+ * @param portName - The port name of the transferred reference
+ * @returns A frozen \`TransferRecord\`
+ */
+export declare function createTransferRecord<TFrom extends string, TTo extends string>(fromScope: TFrom, toScope: TTo, portName: string): TransferRecord<TFrom, TTo>;
+/**
+ * A port augmented with a phantom protocol state parameter.
+ *
+ * The phantom \`TState\` encodes the current protocol phase at the type level.
+ * The container resolves ProtocolPorts to services in their initial state,
+ * and each method invocation returns the service in the next valid state
+ * as defined by the protocol's transition map.
+ *
+ * @typeParam TName - The literal string type for the port name
+ * @typeParam TService - The service interface type (parameterized by state)
+ * @typeParam TState - The current protocol state (phantom parameter)
+ */
+export type ProtocolPort<TName extends string, TService, TState extends string = "initial"> = Port<TName, TService> & {
+	readonly __protocolStateBrand: TState;
+};
+/**
+ * A type-level mapping from \`(State, Method)\` to \`NextState\`.
+ *
+ * Each protocol defines its own transition map. The keys are states, the
+ * values are records mapping method names to target states.
+ *
+ * @example
+ * \`\`\`ts
+ * type DBTransitions = {
+ *   disconnected: { connect: "connected" };
+ *   connected: { query: "connected"; close: "disconnected" };
+ * };
+ * \`\`\`
+ */
+export type TransitionMap = Record<string, Record<string, string>>;
+/**
+ * Looks up the next state after invoking \`TMethod\` in \`TState\`.
+ *
+ * Returns \`never\` if the method is not available in the given state,
+ * or if the state is not in the transition map.
+ *
+ * @typeParam TMap - The protocol's transition map
+ * @typeParam TState - The current state
+ * @typeParam TMethod - The method being invoked
+ */
+export type Transition<TMap extends TransitionMap, TState extends string, TMethod extends string> = TState extends keyof TMap ? TMethod extends keyof TMap[TState] ? TMap[TState][TMethod] : never : never;
+/**
+ * Extracts the set of method names available in a given protocol state.
+ *
+ * Returns the union of method names (keys) from the transition map entry
+ * for the given state. Returns \`never\` if the state is not in the map.
+ *
+ * @typeParam TMap - The protocol's transition map
+ * @typeParam TState - The current state
+ */
+export type AvailableMethods<TMap extends TransitionMap, TState extends string> = TState extends keyof TMap ? keyof TMap[TState] & string : never;
+/**
+ * Descriptive error type for invalid protocol method invocations.
+ *
+ * When a method is called in a state where it is not available, the type
+ * system resolves to this branded error type instead of an opaque \`never\`.
+ * IDE tooltips display the structured error for developer guidance.
+ *
+ * Follows the same pattern as \`NotAPortError\` in \`ports/types.ts\`.
+ *
+ * @typeParam TState - The current protocol state
+ * @typeParam TMethod - The method that was attempted
+ * @typeParam TAvailable - The methods available in the current state
+ */
+export type ProtocolError<TState extends string, TMethod extends string, TAvailable extends string> = {
+	readonly __errorBrand: "ProtocolSequenceError";
+	readonly __message: \`Method '\${TMethod}' is not available in state '\${TState}'\`;
+	readonly __availableMethods: TAvailable;
+	readonly __currentState: TState;
+};
+/**
+ * Conditionally types a method based on the protocol state.
+ *
+ * If the method is available in \`TState\` (exists in the transition map),
+ * yields \`TSignature\`. Otherwise yields \`never\`.
+ *
+ * @typeParam TMap - The protocol's transition map
+ * @typeParam TState - The current protocol state
+ * @typeParam TMethod - The method name
+ * @typeParam TSignature - The method's type signature when available
+ */
+export type ProtocolMethod<TMap extends TransitionMap, TState extends string, TMethod extends string, TSignature> = TState extends keyof TMap ? (TMethod extends keyof TMap[TState] ? TSignature : never) : never;
+/**
+ * A protocol specification describing the state machine for a service.
+ *
+ * This is the runtime counterpart of the type-level transition map.
+ * It carries the protocol's name, states, initial state, and transition
+ * table for runtime introspection and validation.
+ *
+ * @typeParam TStates - Union of valid state string literals
+ * @typeParam TMap - The transition map type
+ */
+export interface ProtocolSpec<TStates extends string = string, TMap extends TransitionMap = TransitionMap> {
+	/** Human-readable name of the protocol */
+	readonly name: string;
+	/** All valid states in this protocol */
+	readonly states: ReadonlyArray<TStates>;
+	/** The initial state when a service is first resolved */
+	readonly initialState: TStates;
+	/** Runtime transition table: transitions[fromState][method] = toState */
+	readonly transitions: Readonly<TMap>;
+}
+/**
+ * Validates that a transition map only references states that exist in the
+ * protocol's state set. Returns \`true\` if valid, or a descriptive error
+ * type if target states reference unknown states.
+ *
+ * @typeParam TStates - The set of valid states
+ * @typeParam TMap - The transition map to validate
+ */
+export type ValidateTransitionMap<TStates extends string, TMap extends Record<string, Record<string, string>>> = {
+	[S in keyof TMap]: S extends TStates ? {
+		[M in keyof TMap[S]]: TMap[S][M] extends TStates ? true : {
+			readonly __errorBrand: "InvalidTransitionTarget";
+			readonly __message: \`Transition target '\${TMap[S][M] & string}' from state '\${S & string}' method '\${M & string}' is not a valid state\`;
+			readonly __validStates: TStates;
+		};
+	} : {
+		readonly __errorBrand: "InvalidSourceState";
+		readonly __message: \`Source state '\${S & string}' is not in the protocol's state set\`;
+		readonly __validStates: TStates;
+	};
+};
+/**
+ * Boolean check: is every target state in the transition map a member of TStates?
+ *
+ * @typeParam TStates - The set of valid states
+ * @typeParam TMap - The transition map
+ */
+export type IsValidProtocol<TStates extends string, TMap extends Record<string, Record<string, string>>> = keyof TMap extends TStates ? _AllTargetsValid<TStates, TMap, keyof TMap & string> : false;
+/**
+ * @internal Helper: checks all target states across all source states
+ */
+export type _AllTargetsValid<TStates extends string, TMap extends Record<string, Record<string, string>>, TKeys extends string> = TKeys extends infer K extends string ? K extends keyof TMap ? TMap[K][keyof TMap[K] & string] extends TStates ? true : false : true : true;
+/**
+ * Error thrown when a protocol definition is invalid.
+ *
+ * This error is thrown at protocol-definition time (not at resolution time)
+ * when the transition map references states that are not in the declared
+ * state set, or when the initial state is not a declared state.
+ */
+export declare class InvalidProtocolError extends ContainerError {
+	readonly _tag: "InvalidProtocol";
+	readonly code: "INVALID_PROTOCOL";
+	readonly isProgrammingError: true;
+	/** The protocol name that failed validation */
+	readonly protocolName: string;
+	/** Description of what is wrong */
+	readonly reason: string;
+	constructor(protocolName: string, reason: string);
+}
+/**
+ * Configuration for defining a protocol state machine.
+ *
+ * @typeParam TStates - Union of valid state string literals
+ * @typeParam TMap - The transition map type
+ */
+export interface DefineProtocolConfig<TStates extends string, TMap extends Record<TStates, Record<string, TStates>>> {
+	/** Human-readable name of the protocol */
+	readonly name: string;
+	/** All valid states as a readonly tuple */
+	readonly states: readonly TStates[];
+	/** The initial state when a service is first resolved */
+	readonly initialState: TStates;
+	/** Transition table: transitions[fromState][method] = toState */
+	readonly transitions: TMap;
+}
+/**
+ * Creates a frozen \`ProtocolSpec\` from a declarative configuration.
+ *
+ * Validates at runtime that:
+ * 1. The initial state is a member of the declared states
+ * 2. All source states in the transition map are declared states
+ * 3. All target states in the transition map are declared states
+ *
+ * @typeParam TStates - Union of valid state literals
+ * @typeParam TMap - The transition map type
+ * @param config - The protocol definition
+ * @returns A frozen \`ProtocolSpec\`
+ * @throws InvalidProtocolError if the protocol definition is invalid
+ *
+ * @example
+ * \`\`\`ts
+ * const dbProtocol = defineProtocol({
+ *   name: "DatabaseConnection",
+ *   states: ["disconnected", "connected"] as const,
+ *   initialState: "disconnected",
+ *   transitions: {
+ *     disconnected: { connect: "connected" },
+ *     connected: { query: "connected", close: "disconnected" },
+ *   },
+ * });
+ * \`\`\`
+ */
+export declare function defineProtocol<TStates extends string, TMap extends Record<TStates, Record<string, TStates>>>(config: DefineProtocolConfig<TStates, TMap>): ProtocolSpec<TStates, TMap & TransitionMap>;
+/**
+ * Checks at runtime whether a method is available in the given protocol state.
+ *
+ * @param spec - The protocol specification
+ * @param state - The current state
+ * @param method - The method name to check
+ * @returns \`true\` if the method is available, \`false\` otherwise
+ */
+export declare function isMethodAvailable(spec: ProtocolSpec, state: string, method: string): boolean;
+/**
+ * Returns the next state after invoking a method in the given state.
+ *
+ * @param spec - The protocol specification
+ * @param state - The current state
+ * @param method - The method being invoked
+ * @returns The next state, or \`undefined\` if the method is not available
+ */
+export declare function getNextState(spec: ProtocolSpec, state: string, method: string): string | undefined;
+/**
+ * Returns all method names available in a given protocol state.
+ *
+ * @param spec - The protocol specification
+ * @param state - The current state
+ * @returns Array of available method names (frozen)
+ */
+export declare function getAvailableMethodNames(spec: ProtocolSpec, state: string): ReadonlyArray<string>;
 /**
  * Error Codes for HexDI.
  *
@@ -2201,83 +3615,24 @@ export declare const ErrorCode: {
  */
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 /**
- * Base error class for all HexDI errors.
+ * Formats a container error with blame context into box-drawn ASCII output.
  *
- * @packageDocumentation
- */
-/**
- * Checks if a value is an object with a string \`message\` property.
- * Used to detect error-like objects that don't extend Error.
- */
-export declare function hasMessageProperty(value: unknown): value is {
-	message: string;
-};
-/**
- * Extracts a human-readable error message from an unknown thrown value.
+ * If the error has no blame context, returns the plain error message.
  *
- * Handles:
- * 1. Standard Error instances → uses error.message
- * 2. Objects with \`message\` property → uses the message property
- * 3. Other values → converts to string
- *
- * This properly handles custom error objects that have a \`message\` property
- * but don't extend Error (e.g., from external libraries or serialized errors).
- */
-export declare function extractErrorMessage(cause: unknown): string;
-/**
- * Abstract base class for all container-related errors.
- *
- * Provides a consistent structure for error handling with:
- * - \`code\`: A stable string constant for programmatic error identification
- * - \`isProgrammingError\`: Indicates whether this error represents a programming
- *   mistake (true) or a runtime condition (false)
- *
- * @remarks
- * - All concrete error classes must extend this base class
- * - The \`name\` getter returns the concrete class name for stack traces
- * - Uses \`Error.captureStackTrace\` when available for cleaner stack traces
+ * @param error - The container error to format
+ * @returns Formatted ASCII string with blame information
  *
  * @example
- * \`\`\`typescript
- * try {
- *   container.resolve(SomePort);
- * } catch (error) {
- *   if (error instanceof ContainerError) {
- *     console.log(\`Error code: \${error.code}\`);
- *     if (error.isProgrammingError) {
- *       // This is a bug in the application code
- *     }
- *   }
- * }
+ * \`\`\`
+ * ┌─ Resolution Error ────────────────────────────────
+ * │ Port: "Database" (outbound)
+ * │ Adapter: DatabaseAdapter
+ * │ Violation: FactoryError — ConnectionFailed
+ * │ Path: UserService → Repository → Database
+ * └───────────────────────────────────────────────────
  * \`\`\`
  */
-export declare abstract class ContainerError extends Error {
-	/**
-	 * A stable string constant identifying the error type.
-	 * Suitable for programmatic error handling and logging.
-	 */
-	abstract readonly code: string;
-	/**
-	 * Indicates whether this error represents a programming mistake.
-	 *
-	 * - \`true\`: The error is caused by incorrect usage (e.g., circular dependency,
-	 *   resolving from disposed scope, missing scope). These should be fixed in code.
-	 * - \`false\`: The error is caused by runtime conditions (e.g., factory threw).
-	 *   These may be recoverable or require operational handling.
-	 */
-	abstract readonly isProgrammingError: boolean;
-	/**
-	 * Creates a new ContainerError instance.
-	 *
-	 * @param message - The error message describing what went wrong
-	 */
-	constructor(message: string);
-	/**
-	 * Returns the concrete class name for this error.
-	 * Used in stack traces and error logging.
-	 */
-	get name(): string;
-}
+export declare function formatBlameError(error: ContainerError): string;
 /**
  * Error thrown when a circular dependency is detected during resolution.
  *
@@ -2315,8 +3670,9 @@ export declare class CircularDependencyError extends ContainerError {
 	 * Creates a new CircularDependencyError.
 	 *
 	 * @param dependencyChain - Array of port names forming the cycle.
+	 * @param blame - Optional blame context for error attribution
 	 */
-	constructor(dependencyChain: readonly string[]);
+	constructor(dependencyChain: readonly string[], blame?: BlameContext);
 }
 /**
  * Error thrown when an adapter's factory function throws during instance creation.
@@ -2357,8 +3713,9 @@ export declare class FactoryError extends ContainerError {
 	 *
 	 * @param portName - The name of the port whose factory threw
 	 * @param cause - The original exception thrown by the factory
+	 * @param blame - Optional blame context for error attribution
 	 */
-	constructor(portName: string, cause: unknown);
+	constructor(portName: string, cause: unknown, blame?: BlameContext);
 }
 /**
  * Error thrown when attempting to resolve a service from a disposed scope or container.
@@ -2389,8 +3746,9 @@ export declare class DisposedScopeError extends ContainerError {
 	 * Creates a new DisposedScopeError.
 	 *
 	 * @param portName - The name of the port that was attempted to be resolved
+	 * @param blame - Optional blame context for error attribution
 	 */
-	constructor(portName: string);
+	constructor(portName: string, blame?: BlameContext);
 }
 /**
  * Error thrown when attempting to resolve a scoped port from the root container.
@@ -2425,8 +3783,9 @@ export declare class ScopeRequiredError extends ContainerError {
 	 * Creates a new ScopeRequiredError.
 	 *
 	 * @param portName - The name of the scoped port that was attempted to be resolved
+	 * @param blame - Optional blame context for error attribution
 	 */
-	constructor(portName: string);
+	constructor(portName: string, blame?: BlameContext);
 }
 /**
  * Error thrown when an async adapter's factory function throws during instance creation.
@@ -2467,8 +3826,9 @@ export declare class AsyncFactoryError extends ContainerError {
 	 *
 	 * @param portName - The name of the port whose async factory threw
 	 * @param cause - The original exception thrown by the factory
+	 * @param blame - Optional blame context for error attribution
 	 */
-	constructor(portName: string, cause: unknown);
+	constructor(portName: string, cause: unknown, blame?: BlameContext);
 }
 /**
  * Error thrown when attempting to synchronously resolve an async port before initialization.
@@ -2541,6 +3901,7 @@ export declare class AsyncInitializationRequiredError extends ContainerError {
  *   provides: LoggerPort,
  *   factory: () => new ConsoleLogger(),
  *   clonable: true,  // ← Safe to shallow clone
+ *   freeze: true,
  * });
  * \`\`\`
  */
@@ -2560,6 +3921,116 @@ export declare class NonClonableForkedError extends ContainerError {
 	constructor(portName: string);
 }
 /**
+ * Contract validation types for runtime interface conformance checking.
+ *
+ * These types support runtime verification that adapter factory outputs
+ * structurally conform to the port's expected interface.
+ *
+ * @see {@link https://hex-di.dev/spec/core/behaviors/10-contract-validation | BEH-CO-10}
+ *
+ * @packageDocumentation
+ */
+/**
+ * A single contract violation detected during conformance checking.
+ *
+ * Each violation has a unique \`_tag\` for discriminated union pattern matching:
+ * - \`"MissingMethod"\` — Expected function member is absent
+ * - \`"TypeMismatch"\` — Member exists but has wrong type category
+ * - \`"MissingProperty"\` — Expected non-function member is absent
+ */
+export type ContractViolation = {
+	readonly _tag: "MissingMethod";
+	readonly memberName: string;
+	readonly expected: string;
+	readonly actual: string;
+} | {
+	readonly _tag: "TypeMismatch";
+	readonly memberName: string;
+	readonly expected: string;
+	readonly actual: string;
+} | {
+	readonly _tag: "MissingProperty";
+	readonly memberName: string;
+	readonly expected: string;
+	readonly actual: string;
+};
+/**
+ * Result of a runtime interface conformance check.
+ *
+ * \`conforms\` is \`true\` when no violations are found.
+ * Both the result and all violation objects are frozen.
+ */
+export interface ConformanceCheckResult {
+	readonly conforms: boolean;
+	readonly violations: ReadonlyArray<ContractViolation>;
+}
+/**
+ * Result of arity verification for a single method.
+ */
+export interface SignatureCheck {
+	readonly memberName: string;
+	readonly expectedArity: number;
+	readonly actualArity: number;
+	readonly arityMatch: boolean;
+}
+/**
+ * Specification for a single method on a port's expected interface.
+ *
+ * Used by \`checkSignatures\` to verify function arity and optionally
+ * return type category.
+ */
+export interface PortMethodSpec {
+	readonly name: string;
+	readonly arity: number;
+	readonly isAsync: boolean;
+	readonly returnTypeHint?: "void" | "promise" | "result" | "value";
+}
+/**
+ * Specification for a single member (method or property) on a port's
+ * expected interface. Used by \`checkConformance\` to verify structural
+ * conformance.
+ */
+export interface PortMemberSpec {
+	readonly name: string;
+	/** The expected \`typeof\` category: "function", "string", "number", "object", etc. */
+	readonly typeCategory: string;
+}
+/**
+ * Configuration for contract checking behavior.
+ *
+ * - \`"off"\` — No contract checking (default, zero performance cost)
+ * - \`"warn"\` — Log warnings for violations but do not throw
+ * - \`"strict"\` — Throw \`ContractViolationError\` on violations
+ */
+export type ContractCheckMode = "off" | "warn" | "strict";
+/**
+ * Error raised when an adapter's factory output does not conform to the port's
+ * expected interface contract.
+ *
+ * Carries \`BlameContext\` from the blame-aware error system (TG-03).
+ * The error is frozen per INV-CO-6.
+ */
+export declare class ContractViolationError extends ContainerError {
+	readonly _tag: "ContractViolationError";
+	readonly code: "CONTRACT_VIOLATION";
+	readonly isProgrammingError: true;
+	/** The port whose contract was violated. */
+	readonly portName: string;
+	/** The adapter that produced the non-conforming instance. */
+	readonly adapterName: string;
+	/** All detected violations. */
+	readonly violations: ReadonlyArray<ContractViolation>;
+	/**
+	 * Creates a new \`ContractViolationError\`.
+	 *
+	 * @param portName - Name of the port whose contract was violated
+	 * @param adapterName - Name of the adapter that violated the contract
+	 * @param violations - Array of specific violations detected
+	 * @param blame - Blame context for error attribution
+	 */
+	constructor(portName: string, adapterName: string, violations: ReadonlyArray<ContractViolation>, blame?: BlameContext);
+}
+/**
  * Union of all container resolution errors.
  *
  * Each variant is distinguished by a unique \`_tag\` literal:
@@ -2570,8 +4041,9 @@ export declare class NonClonableForkedError extends ContainerError {
  * - \`"AsyncFactoryFailed"\` — Async factory threw
  * - \`"AsyncInitRequired"\` — Async port resolved synchronously
  * - \`"NonClonableForked"\` — Forked inheritance on non-clonable adapter
+ * - \`"ContractViolationError"\` — Adapter output violates port contract
  */
-export type ResolutionError = CircularDependencyError | FactoryError | DisposedScopeError | ScopeRequiredError | AsyncFactoryError | AsyncInitializationRequiredError | NonClonableForkedError;
+export type ResolutionError = CircularDependencyError | FactoryError | DisposedScopeError | ScopeRequiredError | AsyncFactoryError | AsyncInitializationRequiredError | NonClonableForkedError | ContractViolationError;
 /**
  * Checks if an unknown error is a \`ResolutionError\`.
  *
@@ -2820,152 +4292,240 @@ export declare function isHexError(message: string): boolean;
  */
 export declare function parseError(message: string): ParsedError | undefined;
 /**
- * Inheritance mode for child containers.
- * - shared: Child shares parent's singleton instance (live reference)
- * - forked: Child gets a snapshot copy of parent's instance
- * - isolated: Child creates its own fresh instance
- */
-export type InheritanceMode = "shared" | "forked" | "isolated";
-/**
- * Origin of a service in a container.
- * - own: Service is defined in the current container (new local adapter)
- * - inherited: Service is inherited from a parent container
- * - overridden: Service replaces a parent adapter (child override)
- */
-export type ServiceOrigin = "own" | "inherited" | "overridden";
-/**
- * Container type discriminant for type-safe snapshot handling.
- */
-export type ContainerKind = "root" | "child" | "lazy" | "scope";
-/**
- * Container phase states across all container types.
+ * Checks whether an instance structurally conforms to a port's member specs.
  *
- * Different container types have different valid phases:
- * - Root: "uninitialized" | "initialized" | "disposing" | "disposed"
- * - Child: "initialized" | "disposing" | "disposed" (inherits init from parent)
- * - Lazy: "unloaded" | "loading" | "loaded" | "disposing" | "disposed"
- * - Scope: "active" | "disposing" | "disposed"
+ * Algorithm:
+ * 1. For each expected member in the port spec:
+ *    a. Check if the member exists on the instance (\`memberName in instance\`)
+ *    b. If missing, record a \`MissingMethod\` or \`MissingProperty\` violation
+ *    c. If present, check the type category (\`typeof instance[memberName]\`)
+ *    d. If the type category does not match, record a \`TypeMismatch\` violation
+ * 2. If \`violations.length > 0\`, \`conforms\` is \`false\`
+ * 3. \`Object.freeze()\` the result and all violation objects
+ *
+ * @param instance - The value produced by the adapter factory
+ * @param memberSpecs - Array of expected member specifications
+ * @returns A frozen \`ConformanceCheckResult\`
  */
-export type ContainerPhase = "uninitialized" | "initialized" | "unloaded" | "loading" | "loaded" | "active" | "disposing" | "disposed";
+export declare function checkConformance(instance: unknown, memberSpecs: ReadonlyArray<PortMemberSpec>): ConformanceCheckResult;
 /**
- * Information about a resolved singleton.
+ * Derives \`PortMemberSpec[]\` from a port's \`methods\` metadata.
+ *
+ * When a port specifies \`methods: ["send", "validate"]\`, each method name
+ * becomes a \`PortMemberSpec\` with \`typeCategory: "function"\`. This is the
+ * default derivation; the methods metadata only records method names so the
+ * expected type is always \`"function"\`.
+ *
+ * @param methods - Array of method names from \`PortMetadata.methods\`
+ * @returns Array of \`PortMemberSpec\` objects (frozen)
  */
-export interface SingletonEntry {
-	/** Port name of the singleton */
+export declare function deriveMethodSpecs(methods: readonly string[]): ReadonlyArray<PortMemberSpec>;
+/**
+ * Verifies arity of function members on an instance against port method specs.
+ *
+ * Algorithm:
+ * 1. For each method spec:
+ *    a. Access the corresponding member on the instance
+ *    b. If the member is a function, compare \`fn.length\` to \`expectedArity\`
+ *    c. Record whether the arity matches
+ * 2. Return the array of \`SignatureCheck\` results (frozen)
+ *
+ * Arity mismatches are informational; the caller decides whether to treat
+ * them as warnings or errors based on the contract check mode.
+ *
+ * @param instance - The resolved service instance (must be an object)
+ * @param methodSpecs - Array of method specifications with expected arity
+ * @returns Frozen array of \`SignatureCheck\` results
+ */
+export declare function checkSignatures(instance: Record<string, unknown>, methodSpecs: ReadonlyArray<PortMethodSpec>): ReadonlyArray<SignatureCheck>;
+/**
+ * Behavioral port specifications: pre/postconditions and invariants.
+ *
+ * Ports can declare preconditions (requirements on arguments), postconditions
+ * (guarantees on return values), and invariants (conditions that must hold
+ * before and after every method call) for each method. These annotations
+ * are stored in the port's runtime metadata and evaluated when runtime
+ * verification mode is enabled.
+ *
+ * @see {@link https://hex-di.dev/spec/core/behaviors/13-behavioral-port-specs | BEH-CO-13}
+ *
+ * @packageDocumentation
+ */
+/**
+ * A predicate function used in contract checks.
+ *
+ * @typeParam T - The type of value being checked
+ */
+export type Predicate<T> = (value: T) => boolean;
+/**
+ * A single named condition (precondition or postcondition) on a method.
+ *
+ * @typeParam T - The type being checked (args tuple for preconditions, return type for postconditions)
+ */
+export interface NamedCondition<T> {
+	readonly name: string;
+	readonly check: Predicate<T>;
+	readonly message: string;
+}
+/**
+ * Pre/postcondition contract for a single method.
+ *
+ * @typeParam TArgs - Tuple type of the method's parameters
+ * @typeParam TReturn - The method's return type (Promises are unwrapped since
+ *   postconditions check the resolved value)
+ */
+export interface MethodContract<TArgs extends readonly unknown[], TReturn> {
+	readonly preconditions: ReadonlyArray<NamedCondition<TArgs>>;
+	readonly postconditions: ReadonlyArray<NamedCondition<TReturn>>;
+}
+/**
+ * Extracts function-property keys from a type.
+ *
+ * Uses \`(...args: never[]) => unknown\` as the function test because function
+ * parameter types are contravariant: \`(a: number) => void\` does NOT extend
+ * \`(...args: unknown[]) => void\`, but it DOES extend \`(...args: never[]) => unknown\`.
+ *
+ * @internal
+ */
+export type FunctionKeys<T> = {
+	[K in keyof T]: T[K] extends (...args: never[]) => unknown ? K : never;
+}[keyof T];
+/**
+ * Unwraps a Promise type to its resolved value.
+ * Non-Promise types are returned as-is.
+ *
+ * @internal
+ */
+export type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
+/**
+ * Behavioral specification for a port, declaring pre/postconditions per method.
+ *
+ * Only function-typed properties of \`T\` appear in the \`methods\` map.
+ * Non-function properties are excluded at the type level.
+ * All method contracts are optional -- you only need to specify contracts
+ * for methods you want to verify.
+ *
+ * For async methods, postcondition predicates receive the unwrapped (resolved)
+ * value, not the Promise, because the verification proxy awaits async results
+ * before checking postconditions.
+ *
+ * @typeParam T - The service interface type
+ */
+export interface BehavioralPortSpec<T> {
+	readonly methods: {
+		readonly [K in FunctionKeys<T>]?: T[K] extends (...args: infer A) => infer R ? MethodContract<A extends readonly unknown[] ? A : readonly unknown[], UnwrapPromise<R>> : never;
+	};
+}
+/**
+ * An invariant condition on the service instance state.
+ *
+ * Invariants are checked before and after every method call when
+ * runtime verification is enabled.
+ *
+ * @typeParam T - The service interface type
+ */
+export interface StateInvariant<T> {
+	readonly name: string;
+	readonly check: Predicate<T>;
+	readonly message: string;
+}
+/**
+ * Behavioral specification that includes state invariants.
+ *
+ * Extends \`BehavioralPortSpec<T>\` with an array of invariants that
+ * must hold before and after every method invocation.
+ *
+ * @typeParam T - The service interface type
+ */
+export interface StatefulPortSpec<T> extends BehavioralPortSpec<T> {
+	readonly invariants: ReadonlyArray<StateInvariant<T>>;
+}
+/**
+ * Configuration for runtime behavioral verification.
+ *
+ * - \`runtimeVerification: false\` (default) — no proxy wrapping, zero overhead
+ * - \`runtimeVerification: true\` — resolved services are wrapped in verification proxies
+ * - \`verificationMode\` — which checks to run (default: "all")
+ * - \`onViolation\` — how to handle violations (default: "error")
+ */
+export interface VerificationConfig {
+	readonly runtimeVerification?: boolean;
+	readonly verificationMode?: "all" | "preconditions" | "postconditions" | "invariants";
+	readonly onViolation?: "error" | "warn" | "log";
+}
+/**
+ * A violation detected during runtime behavioral verification.
+ *
+ * Carries the violation tag, contract name, human-readable message,
+ * the port and method names, and optional blame context.
+ */
+export interface VerificationViolation {
+	readonly _tag: "PreconditionViolation" | "PostconditionViolation" | "InvariantViolation";
+	readonly contractName: string;
+	readonly message: string;
 	readonly portName: string;
-	/** Timestamp when the singleton was resolved */
-	readonly resolvedAt: number;
-	/** Whether the singleton is currently resolved (has cached instance) */
-	readonly isResolved: boolean;
+	readonly methodName: string;
 }
 /**
- * Information about an active scope.
+ * Error thrown when a precondition is violated.
  */
-export interface ScopeInfo {
-	readonly id: string;
-	readonly parentId: string | null;
-	readonly childIds: readonly string[];
-	readonly resolvedPorts: readonly string[];
-	readonly createdAt: number;
-	readonly isActive: boolean;
+export declare class PreconditionViolationError extends ContainerError {
+	readonly _tag: "PreconditionViolation";
+	readonly code: "PRECONDITION_VIOLATION";
+	readonly isProgrammingError: true;
+	readonly violation: VerificationViolation;
+	constructor(violation: VerificationViolation);
 }
 /**
- * Hierarchical tree structure for scopes.
+ * Error thrown when a postcondition is violated.
  */
-export interface ScopeTree {
-	readonly id: string;
-	readonly status: "active" | "disposed";
-	readonly resolvedCount: number;
-	readonly totalCount: number;
-	readonly children: readonly ScopeTree[];
-	/** Port names of resolved services in this scope */
-	readonly resolvedPorts: readonly string[];
+export declare class PostconditionViolationError extends ContainerError {
+	readonly _tag: "PostconditionViolation";
+	readonly code: "POSTCONDITION_VIOLATION";
+	readonly isProgrammingError: true;
+	readonly violation: VerificationViolation;
+	constructor(violation: VerificationViolation);
 }
 /**
- * Base snapshot fields shared by all container types.
+ * Error thrown when an invariant is violated.
  */
-export interface ContainerSnapshotBase {
-	readonly singletons: readonly SingletonEntry[];
-	readonly scopes: ScopeTree;
-	readonly isDisposed: boolean;
-	/** Human-readable container name for DevTools display */
-	readonly containerName: string;
+export declare class InvariantViolationError extends ContainerError {
+	readonly _tag: "InvariantViolation";
+	readonly code: "INVARIANT_VIOLATION";
+	readonly isProgrammingError: true;
+	readonly violation: VerificationViolation;
+	readonly checkedAt: "pre-method" | "post-method";
+	constructor(violation: VerificationViolation, checkedAt: "pre-method" | "post-method");
 }
 /**
- * Root container snapshot.
+ * Wraps a service instance in a Proxy that intercepts method calls to check
+ * preconditions, postconditions, and invariants.
  *
- * Root containers are created via \`createContainer(graph)\` and own
- * the dependency graph. They manage async adapter initialization.
- */
-export interface RootContainerSnapshot extends ContainerSnapshotBase {
-	readonly kind: "root";
-	readonly phase: "uninitialized" | "initialized" | "disposing" | "disposed";
-	readonly isInitialized: boolean;
-	readonly asyncAdaptersTotal: number;
-	readonly asyncAdaptersInitialized: number;
-}
-/**
- * Child container snapshot.
+ * The proxy is transparent: non-function properties pass through without
+ * interception. Only function properties listed in the behavioral spec are
+ * wrapped with verification logic.
  *
- * Child containers are created via \`container.createChild(graph)\` and
- * extend or override the parent's adapters.
- */
-export interface ChildContainerSnapshot extends ContainerSnapshotBase {
-	readonly kind: "child";
-	readonly phase: "initialized" | "disposing" | "disposed";
-	readonly parentId: string;
-	/** Per-port inheritance modes (port name -> mode). Defaults to 'shared' if not specified. */
-	readonly inheritanceModes: ReadonlyMap<string, InheritanceMode>;
-}
-/**
- * Lazy container snapshot.
+ * Algorithm:
+ * 1. The Proxy's \`get\` trap intercepts property access
+ * 2. For function properties with a matching method contract:
+ *    a. Check all invariants on the current service state (pre-call)
+ *    b. Check all preconditions for this method against the arguments
+ *    c. Invoke the original method
+ *    d. For async methods (Promise return), \`await\` the result before continuing
+ *    e. Check all postconditions for this method against the return value
+ *    f. Check all invariants on the service state (post-call)
+ *    g. If any check fails, handle per \`onViolation\` config
+ *    h. Return the original method's return value
+ * 3. For non-function properties, pass through without interception
  *
- * Lazy containers are created via \`container.createLazyChild(loader)\` and
- * defer graph loading until first use.
+ * @typeParam T - The service interface type (must be an object)
+ * @param instance - The real service instance
+ * @param spec - The behavioral/stateful port spec with contracts and invariants
+ * @param portName - The port name (used in violation messages)
+ * @param config - Verification configuration (mode, onViolation)
+ * @returns A Proxy wrapping the instance
  */
-export interface LazyContainerSnapshot extends ContainerSnapshotBase {
-	readonly kind: "lazy";
-	readonly phase: "unloaded" | "loading" | "loaded" | "disposing" | "disposed";
-	readonly isLoaded: boolean;
-}
-/**
- * Scope snapshot.
- *
- * Scopes are created via \`container.createScope()\` and provide
- * isolated scoped service instances.
- */
-export interface ScopeSnapshot extends ContainerSnapshotBase {
-	readonly kind: "scope";
-	readonly phase: "active" | "disposing" | "disposed";
-	readonly scopeId: string;
-	readonly parentScopeId: string | null;
-}
-/**
- * Discriminated union of all container snapshots.
- *
- * Use \`snapshot.kind\` for type-safe narrowing to specific container types.
- *
- * @example
- * \`\`\`typescript
- * function handleSnapshot(snapshot: ContainerSnapshot) {
- *   switch (snapshot.kind) {
- *     case "root":
- *       console.log(\`Async adapters: \${snapshot.asyncAdaptersInitialized}/\${snapshot.asyncAdaptersTotal}\`);
- *       break;
- *     case "lazy":
- *       console.log(\`Loaded: \${snapshot.isLoaded}\`);
- *       break;
- *     case "child":
- *       console.log(\`Inheritance modes: \${snapshot.inheritanceModes.size} configured\`);
- *       break;
- *     case "scope":
- *       console.log(\`Scope ID: \${snapshot.scopeId}\`);
- *       break;
- *   }
- * }
- * \`\`\`
- */
-export type ContainerSnapshot = RootContainerSnapshot | ChildContainerSnapshot | LazyContainerSnapshot | ScopeSnapshot;
+export declare function wrapWithVerification<T extends object>(instance: T, spec: BehavioralPortSpec<T>, portName: string, config?: VerificationConfig): T;
 /**
  * Represents a single resolution trace entry.
  *
@@ -3241,6 +4801,80 @@ export declare const TRACING_NOT_CONFIGURED_CODE = "HEX_WARN_001";
  * @param containerName - The human-readable container name
  */
 export declare function emitTracingWarning(containerName: string): void;
+/**
+ * Capability Analyzer Types.
+ *
+ * Type definitions for static analysis of adapter factories for ambient
+ * authority patterns. Adapters should receive all external authority through
+ * constructor injection (ports), not through global state, environment
+ * variables, or module singletons.
+ *
+ * @see {@link https://hex-di.dev/spec/core/behaviors/11-capability-analyzer | BEH-CO-11}
+ *
+ * @packageDocumentation
+ */
+/**
+ * Classification of ambient authority patterns detected in adapter factories.
+ *
+ * | Kind                | Example Pattern               | Severity |
+ * |---------------------|-------------------------------|----------|
+ * | \`"global-variable"\` | \`globalThis.config\`           | High     |
+ * | \`"process-env"\`     | \`process.env.API_URL\`         | High     |
+ * | \`"module-singleton"\`| \`require("./singleton")\`      | Medium   |
+ * | \`"direct-io"\`       | \`fs.readFileSync(...)\`        | Medium   |
+ * | \`"date-now"\`        | \`Date.now()\`, \`new Date()\`    | Low      |
+ * | \`"math-random"\`     | \`Math.random()\`               | Low      |
+ */
+export type AmbientAuthorityKind = "global-variable" | "process-env" | "module-singleton" | "direct-io" | "date-now" | "math-random";
+/**
+ * A single detection of ambient authority usage in a factory function.
+ *
+ * Produced by {@link detectAmbientAuthority} when a factory's source code
+ * matches a known ambient authority pattern.
+ */
+export interface AmbientAuthorityDetection {
+	/** The classification of the detected pattern. */
+	readonly kind: AmbientAuthorityKind;
+	/** The specific identifier that was detected (e.g., "process.env", "globalThis"). */
+	readonly identifier: string;
+	/** Confidence level of the detection. */
+	readonly confidence: "high" | "medium" | "low";
+	/** Optional source snippet surrounding the detection for context. */
+	readonly sourceSnippet?: string;
+}
+/**
+ * Audit entry for a single adapter in a capability audit report.
+ */
+export interface AdapterAuditEntry {
+	/** The name of the adapter's provided port. */
+	readonly adapterName: string;
+	/** The port name this adapter provides. */
+	readonly portName: string;
+	/** All ambient authority detections found in this adapter's factory. */
+	readonly detections: ReadonlyArray<AmbientAuthorityDetection>;
+	/** True if no ambient authority was detected. */
+	readonly isClean: boolean;
+}
+/**
+ * Structured audit report for all adapters in a dependency graph.
+ *
+ * Summarizes ambient authority detections per adapter and provides
+ * an overall authority hygiene score. Designed for CI/CD integration.
+ */
+export interface CapabilityAuditReport {
+	/** Per-adapter audit entries. */
+	readonly entries: ReadonlyArray<AdapterAuditEntry>;
+	/** Total number of adapters audited. */
+	readonly totalAdapters: number;
+	/** Number of adapters with no ambient authority detections. */
+	readonly cleanAdapters: number;
+	/** Number of adapters with at least one ambient authority detection. */
+	readonly violatingAdapters: number;
+	/** Number of high-confidence violations across all adapters. */
+	readonly highConfidenceViolations: number;
+	/** Human-readable summary suitable for terminal output. */
+	readonly summary: string;
+}
 /**
  * Structural type for graph-like objects that can be inspected.
  *
@@ -3563,6 +5197,26 @@ export interface GraphInspection {
 	 * Summary counts of ports by direction.
 	 */
 	readonly directionSummary: DirectionSummary;
+	/**
+	 * Capability audit report for all adapters in the graph.
+	 *
+	 * Summarizes ambient authority detections per adapter, providing
+	 * an overall authority hygiene score. Useful for CI/CD integration
+	 * where a pipeline step can fail the build if
+	 * \`capabilities.highConfidenceViolations > 0\`.
+	 *
+	 * @see {@link CapabilityAuditReport}
+	 *
+	 * @example
+	 * \`\`\`typescript
+	 * const info = builder.inspect();
+	 * if (info.capabilities.highConfidenceViolations > 0) {
+	 *   console.error(info.capabilities.summary);
+	 *   process.exitCode = 1;
+	 * }
+	 * \`\`\`
+	 */
+	readonly capabilities: CapabilityAuditReport;
 }
 /**
  * Result of validating a GraphBuilder.
@@ -3672,6 +5326,8 @@ export interface GraphInspectionJSON {
 	readonly ports: readonly PortInfo[];
 	/** Summary counts of ports by direction */
 	readonly directionSummary: DirectionSummary;
+	/** Capability audit report */
+	readonly capabilities: CapabilityAuditReport;
 }
 /**
  * Options for inspectionToJSON serialization.
@@ -4165,6 +5821,191 @@ export interface InspectorAPI {
 	disposeLibraries?(): void;
 }
 /**
+ * Metadata for a single adapter within a disposal phase.
+ */
+export interface DisposalPhaseEntry {
+	/** The name used when registering this adapter (derived from the provides port). */
+	readonly adapterName: string;
+	/** The port name this adapter provides. */
+	readonly portName: string;
+	/** Whether this adapter has a finalizer that must be invoked. */
+	readonly hasFinalizer: boolean;
+}
+/**
+ * A group of adapters that can be disposed in parallel because they have
+ * no dependency relationships between them.
+ *
+ * Phases are ordered from 0 (leaf nodes, disposed first) to N (root nodes, disposed last).
+ */
+interface DisposalPhase\$1 {
+	/** The level number in the disposal plan (0 = leaves). */
+	readonly level: number;
+	/** The adapters to dispose in this phase (independent of each other). */
+	readonly adapters: ReadonlyArray<DisposalPhaseEntry>;
+}
+/**
+ * A complete disposal plan computed from the dependency graph.
+ *
+ * Phases are ordered from first-to-dispose (leaf nodes with no dependents)
+ * to last-to-dispose (root nodes with no dependencies on other nodes).
+ */
+export interface DisposalPlan {
+	/** Ordered phases from first-to-dispose (leaves) to last-to-dispose (roots). */
+	readonly phases: ReadonlyArray<DisposalPhase\$1>;
+	/** Total number of adapters in the plan. */
+	readonly totalAdapters: number;
+}
+/**
+ * Records an error that occurred during disposal of a single adapter.
+ */
+export interface DisposalErrorEntry {
+	/** The name of the adapter whose finalizer threw. */
+	readonly adapterName: string;
+	/** The error thrown by the finalizer. */
+	readonly error: unknown;
+	/** Blame context attributing the error. */
+	readonly blame: BlameContext;
+}
+/**
+ * The result of executing a disposal plan.
+ *
+ * Even when errors occur, disposal proceeds on a best-effort basis.
+ * All adapters are marked as disposed regardless of whether their
+ * finalizer succeeded or failed.
+ */
+export interface DisposalResult {
+	/** Port names of all adapters that were processed (in disposal order). */
+	readonly disposed: ReadonlyArray<string>;
+	/** Errors from failed finalizers, with blame context. */
+	readonly errors: ReadonlyArray<DisposalErrorEntry>;
+	/** Total time in milliseconds for the disposal process. */
+	readonly totalTime: number;
+}
+/**
+ * Describes a single adapter's dependencies for disposal planning.
+ *
+ * Used as input to \`computeDisposalPlan\` to avoid coupling
+ * the disposal planner to the full adapter type.
+ */
+export interface DependencyEntry {
+	/** The port name this adapter provides. */
+	readonly portName: string;
+	/** Port names this adapter depends on. */
+	readonly dependsOn: ReadonlyArray<string>;
+	/** Whether this adapter has a finalizer. */
+	readonly hasFinalizer: boolean;
+}
+/**
+ * Thrown when a cycle is detected during disposal planning.
+ *
+ * This should never happen if the graph was validated at build time.
+ * If this error occurs, it indicates a framework bug.
+ */
+export declare class DisposalCycleInvariantError extends Error {
+	readonly code: "DISPOSAL_CYCLE_INVARIANT";
+	readonly remainingNodes: ReadonlyArray<string>;
+	constructor(remainingNodes: ReadonlyArray<string>);
+	get name(): string;
+}
+/**
+ * Computes a phased disposal plan from a set of dependency entries.
+ *
+ * Algorithm (Kahn's algorithm on the "dependents" graph):
+ * 1. Build an adjacency list: for each node, record its direct dependencies
+ * 2. Build the reverse graph: for each node, record its dependents
+ * 3. Start with nodes that have zero dependents (leaf nodes) as phase 0
+ * 4. Remove them from the graph, decrement dependent counts on their dependencies
+ * 5. When a dependency's dependent count reaches 0, add it to the next phase
+ * 6. Repeat until all nodes are assigned to a phase
+ *
+ * @param entries - The dependency entries describing the graph
+ * @returns A frozen \`DisposalPlan\` with phases ordered leaves-first
+ * @throws {DisposalCycleInvariantError} If a cycle is detected (should never happen)
+ */
+export declare function computeDisposalPlan(entries: ReadonlyArray<DependencyEntry>): DisposalPlan;
+/**
+ * Provides instance and finalizer data for a given port name.
+ */
+export interface DisposalInstanceProvider {
+	/**
+	 * Retrieves the cached instance and optional finalizer for a port name.
+	 * Returns \`undefined\` if no instance is cached for the port.
+	 */
+	getInstanceForDisposal(portName: string): {
+		readonly instance: unknown;
+		readonly finalizer?: ((instance: unknown) => void | Promise<void>) | undefined;
+	} | undefined;
+}
+/**
+ * Options for controlling disposal execution behavior.
+ */
+export interface ExecuteDisposalOptions {
+	/** Maximum time in ms to wait for each individual finalizer. Default: 30_000 */
+	readonly finalizerTimeoutMs?: number;
+}
+/**
+ * Executes a disposal plan phase-by-phase.
+ *
+ * Phases are executed sequentially (phase 0 before phase 1, etc.)
+ * but adapters within the same phase are disposed in parallel.
+ *
+ * Errors do not halt disposal — all phases are executed on a best-effort basis
+ * and all errors are collected in the result.
+ *
+ * @param plan - The computed disposal plan
+ * @param provider - Provides instance and finalizer data
+ * @param options - Execution options (timeout, etc.)
+ * @returns A frozen \`DisposalResult\` with all disposed adapters and errors
+ */
+export declare function executeDisposalPlan(plan: DisposalPlan, provider: DisposalInstanceProvider, options?: ExecuteDisposalOptions): Promise<DisposalResult>;
+/**
+ * Detects ambient authority patterns in an adapter factory function.
+ *
+ * Analyzes the factory function's source code (obtained via \`Function.prototype.toString()\`)
+ * for known ambient authority patterns using regex matchers.
+ *
+ * @param factory - The factory function to analyze
+ * @returns A frozen array of detections, empty if no patterns found or if the function is native code
+ *
+ * @example
+ * \`\`\`typescript
+ * const detections = detectAmbientAuthority(
+ *   () => ok({ get: (key: string) => process.env[key] })
+ * );
+ * // [{ kind: "process-env", identifier: "process.env", confidence: "high", sourceSnippet: "..." }]
+ * \`\`\`
+ *
+ * @example Clean factory (no ambient authority)
+ * \`\`\`typescript
+ * const detections = detectAmbientAuthority(
+ *   (deps) => ok(new Service(deps.DB))
+ * );
+ * // []
+ * \`\`\`
+ */
+export declare function detectAmbientAuthority(factory: (...args: never[]) => unknown): ReadonlyArray<AmbientAuthorityDetection>;
+/**
+ * Audits all adapters in a dependency graph for ambient authority usage.
+ *
+ * Iterates over every adapter registered in the graph, runs
+ * {@link detectAmbientAuthority} on each factory, and aggregates the results
+ * into a frozen {@link CapabilityAuditReport}.
+ *
+ * @param graph - A graph-like object with an \`adapters\` array
+ * @returns A frozen capability audit report
+ *
+ * @example
+ * \`\`\`typescript
+ * const report = auditGraph(graph);
+ *
+ * if (report.highConfidenceViolations > 0) {
+ *   console.error(report.summary);
+ *   process.exitCode = 1;
+ * }
+ * \`\`\`
+ */
+export declare function auditGraph(graph: InspectableGraph): CapabilityAuditReport;
+/**
  * Correlation ID utilities for tracing and debugging.
  *
  * ## Determinism
@@ -4351,8 +6192,196 @@ export declare function withContext<T>(variable: ContextVariable<T>, value: T): 
  * \`\`\`
  */
 export declare function getContext<T>(context: Map<symbol, unknown>, variable: ContextVariable<T>): T | undefined;
+declare const DisposableBrand: unique symbol;
+declare const NonDisposableBrand: unique symbol;
+/** Resource kind discriminant */
+export type ResourceKind = "disposable" | "non-disposable";
+/** Phantom-branded type marking a service that owns disposable resources */
+export type Disposable<T> = T & {
+	readonly [DisposableBrand]: true;
+};
+/** Phantom-branded type marking a service with no disposal obligations */
+export type NonDisposable<T> = T & {
+	readonly [NonDisposableBrand]: true;
+};
+/** Union of both resource kinds */
+export type AnyResource<T> = Disposable<T> | NonDisposable<T>;
+/** Extract the resource kind from a branded type */
+export type ResourceKindOf<T> = T extends Disposable<unknown> ? "disposable" : T extends NonDisposable<unknown> ? "non-disposable" : "unknown";
+/** Check if a type has disposal obligations */
+export type IsDisposable<T> = T extends Disposable<unknown> ? true : false;
+/** Check if a type is free of disposal obligations */
+export type IsNonDisposable<T> = T extends NonDisposable<unknown> ? true : false;
+/**
+ * Infer resource kind from adapter config shape.
+ * If config has a \`finalizer\` function, it's disposable.
+ */
+export type InferResourceKind<TConfig> = TConfig extends {
+	finalizer: (...args: ReadonlyArray<unknown>) => unknown;
+} ? "disposable" : "non-disposable";
+/**
+ * Aggregate disposal obligations from a tuple of resource types.
+ * If ANY resource is disposable, the aggregate is disposable.
+ */
+export type AggregateDisposal<Rs extends ReadonlyArray<unknown>> = true extends {
+	[I in keyof Rs]: IsDisposable<Rs[I]>;
+}[number] ? "disposable" : "non-disposable";
+/**
+ * Type-safe scope that tracks its disposal obligations.
+ * A scope containing disposable resources MUST be disposed.
+ */
+export interface TrackedScope<TKind extends ResourceKind> {
+	readonly _resourceKind: TKind;
+}
+/**
+ * Check if a config object represents a disposable adapter.
+ *
+ * @param config - The adapter config to check
+ * @returns \`true\` if the config has a \`finalizer\` function
+ */
+export declare function isDisposableConfig(config: Record<string, unknown>): boolean;
+/**
+ * Infer resource kind from a config object at runtime.
+ *
+ * @param config - The adapter config to inspect
+ * @returns The inferred resource kind
+ */
+export declare function inferResourceKind(config: Record<string, unknown>): ResourceKind;
+/**
+ * Effect-Capability Unified Types
+ *
+ * Type-level encoding of the duality between error channels (effects)
+ * and capabilities. A service's error type IS its capability profile.
+ *
+ * @packageDocumentation
+ */
+/**
+ * Error tags carry capability metadata.
+ * The _capability field records which capability this error relates to.
+ */
+export interface CapabilityError<TTag extends string, TCapability extends string, _TFields extends Record<string, unknown> = Record<string, never>> {
+	readonly _tag: TTag;
+	readonly _capability: TCapability;
+}
+/**
+ * Construct a CapabilityError type with optional fields spread into the type.
+ * When TFields is Record<string, never> (empty), the result omits fields.
+ */
+export type MakeCapabilityError<TTag extends string, TCapability extends string, TFields extends Record<string, unknown> = Record<string, never>> = [
+	TFields
+] extends [
+	Record<string, never>
+] ? Readonly<{
+	_tag: TTag;
+	_capability: TCapability;
+}> : Readonly<{
+	_tag: TTag;
+	_capability: TCapability;
+} & TFields>;
+/** Extract all capability names from an error union. */
+export type CapabilitiesExercised<E> = E extends {
+	_capability: infer C extends string;
+} ? C : never;
+/** Extract errors related to a specific capability. */
+export type ErrorsByCapability<E, Cap extends string> = Extract<E, {
+	_capability: Cap;
+}>;
+/** Check if an error union exercises a specific capability. */
+export type ExercisesCapability<E, Cap extends string> = Extract<E, {
+	_capability: Cap;
+}> extends never ? false : true;
+/**
+ * A pure computation exercises no capabilities.
+ * Equivalent to: the error type is \`never\`.
+ */
+export type IsPureComputation<E> = [
+	E
+] extends [
+	never
+] ? true : false;
+/**
+ * Capability profile: the complete set of capabilities a service exercises.
+ * Derived from the error union.
+ */
+export type CapabilityProfile<E> = {
+	readonly [Cap in CapabilitiesExercised<E>]: Extract<E, {
+		_capability: Cap;
+	}>;
+};
+/**
+ * Verify that a service's error type only exercises capabilities it was granted.
+ * Granted capabilities come from the adapter's \`requires\` list.
+ */
+export type VerifyCapabilityUsage<ErrorType, GrantedCapabilities extends string> = Exclude<CapabilitiesExercised<ErrorType>, GrantedCapabilities> extends never ? true : {
+	readonly _error: "UNAUTHORIZED_CAPABILITY_USAGE";
+	readonly unauthorized: Exclude<CapabilitiesExercised<ErrorType>, GrantedCapabilities>;
+	readonly granted: GrantedCapabilities;
+};
+/**
+ * Runtime analysis utilities for effect-capability profiles.
+ *
+ * @packageDocumentation
+ */
+/** A runtime capability profile entry. */
+export interface CapabilityProfileEntry {
+	readonly capability: string;
+	readonly errorTags: ReadonlyArray<string>;
+}
+/**
+ * Analyze an array of error tag objects to extract the capability profile.
+ * Each error tag may have a \`_capability\` field.
+ */
+export declare function analyzeCapabilityProfile(errorTags: ReadonlyArray<{
+	readonly _tag: string;
+	readonly _capability?: string;
+}>): ReadonlyArray<CapabilityProfileEntry>;
+/**
+ * Check if a set of error tags only exercises granted capabilities.
+ */
+export declare function verifyCapabilityUsage(errorTags: ReadonlyArray<{
+	readonly _tag: string;
+	readonly _capability?: string;
+}>, grantedCapabilities: ReadonlySet<string>): {
+	readonly valid: boolean;
+	readonly unauthorized: ReadonlyArray<string>;
+};
+/**
+ * Types for the chaperone contract enforcement system.
+ *
+ * @packageDocumentation
+ */
+/** Enforcement mode controls runtime checking behavior */
+export type EnforcementMode = "strict" | "dev" | "warn" | "off";
+/** Configuration for the chaperone */
+export interface ChaperoneConfig {
+	readonly mode: EnforcementMode;
+	readonly onViolation?: (violation: ChaperoneViolation) => void;
+}
+/** A contract violation report */
+export interface ChaperoneViolation {
+	readonly _tag: "ChaperoneViolation";
+	readonly portName: string;
+	readonly member: string;
+	readonly kind: "missing-method" | "invalid-return" | "type-mismatch";
+	readonly message: string;
+}
+/** Port contract descriptor for runtime checking */
+export interface PortContract {
+	readonly portName: string;
+	readonly members: ReadonlyArray<string>;
+}
+/**
+ * Wrap a resolved service in a Proxy that validates port contracts at runtime.
+ * In "off" mode, returns the service unwrapped (zero overhead).
+ */
+export declare function chaperoneService<T extends object>(service: T, contract: PortContract, config: ChaperoneConfig): T;
+/**
+ * Create a PortContract from a port name and its expected method names.
+ */
+export declare function createPortContract(portName: string, methods: ReadonlyArray<string>): PortContract;
 
 export {
+	DisposalPhase\$1 as DisposalPlanPhase,
 	PortDirection\$1 as GraphPortDirection,
 	createAdapter as createUnifiedAdapter,
 };

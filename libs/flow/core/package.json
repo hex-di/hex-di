@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/flow",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Typed state machine runtime for HexDI - branded types, effects-as-data, activities, and seamless container integration",
   "type": "module",
   "main": "./dist/index.js",

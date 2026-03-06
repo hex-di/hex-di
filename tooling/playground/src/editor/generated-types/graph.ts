@@ -363,9 +363,37 @@ out TFactoryKind extends FactoryKind = "sync", out TClonable extends boolean = f
 	 */
 	readonly clonable: TClonable;
 	/**
+	 * Whether the resolved service instance should be \`Object.freeze()\`d before injection.
+	 *
+	 * When \`true\` (or omitted/defaulted to \`true\`), the container applies \`Object.freeze()\`
+	 * to the service instance after factory invocation and before returning it to the consumer.
+	 * This prevents capability tampering where one consumer modifies a shared service.
+	 *
+	 * When \`false\`, the service instance is returned as-is (mutable). Use this for services
+	 * that require mutable internal state (e.g., connection pools, caches).
+	 *
+	 * @remarks
+	 * - Freeze is shallow only (consistent with Result/Option freeze behavior)
+	 * - Singleton services are frozen once on first resolution; the cached frozen reference is reused
+	 * - Transient services are frozen on every resolution (new frozen instance each time)
+	 * - Scoped services are frozen once per scope
+	 *
+	 * @default true
+	 */
+	readonly freeze: boolean;
+	/**
 	 * Optional finalizer function called during disposal.
 	 */
 	finalizer?(instance: InferService<TProvides>): void | Promise<void>;
+	/**
+	 * Runtime metadata listing the \`_tag\` values of error types this adapter's factory may produce.
+	 *
+	 * Populated by \`createAdapter()\` when \`errorTags\` is provided in the config.
+	 * Used by graph inspection to compute transitive error profiles per port.
+	 *
+	 * Empty array or undefined means the adapter is considered infallible for inspection purposes.
+	 */
+	readonly __errorTags?: readonly string[];
 };
 /**
  * Structural interface matching ANY Adapter without using \`any\`.
@@ -424,9 +452,21 @@ export interface AdapterConstraint {
 	 */
 	readonly clonable: boolean;
 	/**
+	 * Whether the resolved service instance should be \`Object.freeze()\`d before injection.
+	 * Defaults to true (frozen by default).
+	 */
+	readonly freeze: boolean;
+	/**
 	 * Optional finalizer (contravariant param accepts any instance type).
 	 */
 	finalizer?(instance: never): void | Promise<void>;
+	/**
+	 * Runtime metadata listing the \`_tag\` values of error types this adapter's factory may produce.
+	 *
+	 * Used by graph inspection to compute transitive error profiles per port.
+	 * Empty array or undefined means the adapter is considered infallible for inspection purposes.
+	 */
+	readonly __errorTags?: readonly string[];
 }
 export type InferPlaceholder = Port<string, unknown>;
 export type LifetimePlaceholder = Lifetime;
@@ -459,6 +499,7 @@ export type AdapterProvidesShape<TProvides> = {
 	readonly lifetime: string;
 	readonly factoryKind: FactoryKind;
 	readonly clonable: boolean;
+	readonly freeze: boolean;
 };
 /**
  * Extracts the **Port type** from an Adapter's \`provides\` property.
@@ -599,6 +640,80 @@ export type IsLazyPort<TPort> = TPort extends {
 export type UnwrapLazyPort<TPort> = TPort extends {
 	readonly __originalPort: infer TOriginal;
 } ? TOriginal : never;
+/**
+ * Capability Analyzer Types.
+ *
+ * Type definitions for static analysis of adapter factories for ambient
+ * authority patterns. Adapters should receive all external authority through
+ * constructor injection (ports), not through global state, environment
+ * variables, or module singletons.
+ *
+ * @see {@link https://hex-di.dev/spec/core/behaviors/11-capability-analyzer | BEH-CO-11}
+ *
+ * @packageDocumentation
+ */
+/**
+ * Classification of ambient authority patterns detected in adapter factories.
+ *
+ * | Kind                | Example Pattern               | Severity |
+ * |---------------------|-------------------------------|----------|
+ * | \`"global-variable"\` | \`globalThis.config\`           | High     |
+ * | \`"process-env"\`     | \`process.env.API_URL\`         | High     |
+ * | \`"module-singleton"\`| \`require("./singleton")\`      | Medium   |
+ * | \`"direct-io"\`       | \`fs.readFileSync(...)\`        | Medium   |
+ * | \`"date-now"\`        | \`Date.now()\`, \`new Date()\`    | Low      |
+ * | \`"math-random"\`     | \`Math.random()\`               | Low      |
+ */
+export type AmbientAuthorityKind = "global-variable" | "process-env" | "module-singleton" | "direct-io" | "date-now" | "math-random";
+/**
+ * A single detection of ambient authority usage in a factory function.
+ *
+ * Produced by {@link detectAmbientAuthority} when a factory's source code
+ * matches a known ambient authority pattern.
+ */
+export interface AmbientAuthorityDetection {
+	/** The classification of the detected pattern. */
+	readonly kind: AmbientAuthorityKind;
+	/** The specific identifier that was detected (e.g., "process.env", "globalThis"). */
+	readonly identifier: string;
+	/** Confidence level of the detection. */
+	readonly confidence: "high" | "medium" | "low";
+	/** Optional source snippet surrounding the detection for context. */
+	readonly sourceSnippet?: string;
+}
+/**
+ * Audit entry for a single adapter in a capability audit report.
+ */
+export interface AdapterAuditEntry {
+	/** The name of the adapter's provided port. */
+	readonly adapterName: string;
+	/** The port name this adapter provides. */
+	readonly portName: string;
+	/** All ambient authority detections found in this adapter's factory. */
+	readonly detections: ReadonlyArray<AmbientAuthorityDetection>;
+	/** True if no ambient authority was detected. */
+	readonly isClean: boolean;
+}
+/**
+ * Structured audit report for all adapters in a dependency graph.
+ *
+ * Summarizes ambient authority detections per adapter and provides
+ * an overall authority hygiene score. Designed for CI/CD integration.
+ */
+export interface CapabilityAuditReport {
+	/** Per-adapter audit entries. */
+	readonly entries: ReadonlyArray<AdapterAuditEntry>;
+	/** Total number of adapters audited. */
+	readonly totalAdapters: number;
+	/** Number of adapters with no ambient authority detections. */
+	readonly cleanAdapters: number;
+	/** Number of adapters with at least one ambient authority detection. */
+	readonly violatingAdapters: number;
+	/** Number of high-confidence violations across all adapters. */
+	readonly highConfidenceViolations: number;
+	/** Human-readable summary suitable for terminal output. */
+	readonly summary: string;
+}
 declare const RESULT_BRAND: unique symbol;
 declare const OPTION_BRAND: unique symbol;
 /**
@@ -722,7 +837,260 @@ export interface None {
  * @see spec/result/behaviors/09-option.md — BEH-09-004
  */
 export type Option<T> = Some<T> | None;
-export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
+/**
+ * Extracts the success type \`T\` from a \`Result<T, E>\` or \`ResultAsync<T, E>\`.
+ *
+ * @example
+ * \`\`\`ts
+ * import { ok } from '@hex-di/result';
+ * import type { InferOk } from '@hex-di/result';
+ *
+ * type R = ReturnType<typeof ok<number>>;
+ * type T = InferOk<R>; // number
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type InferOk<R> = R extends Result<infer T, unknown> ? T : R extends ResultAsync<infer T, unknown> ? T : never;
+/**
+ * Extracts the error type \`E\` from a \`Result<T, E>\` or \`ResultAsync<T, E>\`.
+ *
+ * @example
+ * \`\`\`ts
+ * import { err } from '@hex-di/result';
+ * import type { InferErr } from '@hex-di/result';
+ *
+ * type R = ReturnType<typeof err<string>>;
+ * type E = InferErr<R>; // string
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type InferErr<R> = R extends Result<unknown, infer E> ? E : R extends ResultAsync<unknown, infer E> ? E : never;
+/**
+ * Extracts the \`Ok\` types from a tuple of \`Result\` or \`ResultAsync\` values as a mapped tuple.
+ *
+ * @example
+ * \`\`\`ts
+ * import type { Result, InferOkTuple } from '@hex-di/result';
+ *
+ * type Rs = [Result<number, string>, Result<boolean, Error>];
+ * type Oks = InferOkTuple<Rs>; // [number, boolean]
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type InferOkTuple<T extends readonly (Result<unknown, unknown> | ResultAsync<unknown, unknown>)[]> = {
+	[K in keyof T]: InferOk<T[K]>;
+};
+/**
+ * Extracts the union of all \`Err\` types from a tuple of \`Result\` or \`ResultAsync\` values.
+ *
+ * @example
+ * \`\`\`ts
+ * import type { Result, InferErrUnion } from '@hex-di/result';
+ *
+ * type Rs = [Result<number, "a">, Result<boolean, "b">];
+ * type Errs = InferErrUnion<Rs>; // "a" | "b"
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type InferErrUnion<T extends readonly (Result<unknown, unknown> | ResultAsync<unknown, unknown>)[]> = InferErr<T[number]>;
+/**
+ * Extracts the union of \`Ok\` types from a tuple of \`Result\` or \`ResultAsync\` values.
+ * Useful for \`Result.any\` which returns a single Ok from the first success.
+ *
+ * @example
+ * \`\`\`ts
+ * import type { Result, InferOkUnion } from '@hex-di/result';
+ *
+ * type Rs = [Result<number, string>, Result<boolean, string>];
+ * type OkU = InferOkUnion<Rs>; // number | boolean
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type InferOkUnion<T extends readonly (Result<unknown, unknown> | ResultAsync<unknown, unknown>)[]> = InferOk<T[number]>;
+/**
+ * A non-empty array type that guarantees at least one element.
+ * The first element is always present (\`T\`), followed by zero or more additional elements.
+ *
+ * @example
+ * \`\`\`ts
+ * import type { NonEmptyArray } from '@hex-di/result';
+ *
+ * const valid: NonEmptyArray<number> = [1, 2, 3]; // ok
+ * // const invalid: NonEmptyArray<number> = [];    // type error
+ *
+ * function head<T>(arr: NonEmptyArray<T>): T {
+ *   return arr[0]; // T, not T | undefined
+ * }
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type NonEmptyArray<T> = [
+	T,
+	...T[]
+];
+/**
+ * Extracts the \`Err\` types from a tuple of \`Result\` or \`ResultAsync\` values as a mapped tuple.
+ * Useful for \`Result.any\` error collection.
+ *
+ * @example
+ * \`\`\`ts
+ * import type { Result, InferErrTuple } from '@hex-di/result';
+ *
+ * type Rs = [Result<number, "a">, Result<boolean, "b">];
+ * type Errs = InferErrTuple<Rs>; // ["a", "b"]
+ * \`\`\`
+ *
+ * @since v1.0.0
+ * @see spec/result/type-system/utility.md
+ */
+export type InferErrTuple<T extends readonly (Result<unknown, unknown> | ResultAsync<unknown, unknown>)[]> = {
+	[K in keyof T]: InferErr<T[K]>;
+};
+declare function all<R extends readonly Result<unknown, unknown>[]>(...results: R): Result<InferOkTuple<R>, InferErrUnion<R>>;
+declare function allSettled<R extends readonly Result<unknown, unknown>[]>(...results: R): Result<InferOkTuple<R>, InferErrUnion<R>[]>;
+declare function any<R extends readonly Result<unknown, unknown>[]>(...results: R): Result<InferOkUnion<R>, InferErrTuple<R>>;
+export type InferErrUnionFromRecord<R extends Record<string, Result<unknown, unknown>>> = InferErr<R[keyof R]>;
+declare function collect<R extends Record<string, Result<unknown, unknown>>>(results: R): Result<{
+	[K in keyof R]: InferOk<R[K]>;
+}, InferErrUnionFromRecord<R>>;
+declare function partition<T, E>(results: readonly Result<T, E>[]): [
+	T[],
+	E[]
+];
+declare function forEach<T, U, E>(items: readonly T[], f: (item: T, index: number) => Result<U, E>): Result<U[], E>;
+declare function zipOrAccumulate<R extends readonly Result<unknown, unknown>[]>(...results: R): Result<InferOkTuple<R>, NonEmptyArray<InferErrUnion<R>>>;
+declare const RESULT_ASYNC_YIELD: unique symbol;
+declare class ResultAsync<T, E> {
+	#private;
+	private constructor();
+	/**
+	 * Creates a \`ResultAsync\` wrapping an \`Ok\` value.
+	 *
+	 * @example
+	 * \`\`\`ts
+	 * import { ResultAsync } from '@hex-di/result';
+	 *
+	 * const result = ResultAsync.ok(42);
+	 * const inner = await result; // Ok(42)
+	 * \`\`\`
+	 *
+	 * @since v1.0.0
+	 * @see spec/result/behaviors/06-async.md — BEH-06-003
+	 */
+	static ok<T>(value: T): ResultAsync<T, never>;
+	/**
+	 * Creates a \`ResultAsync\` wrapping an \`Err\` value.
+	 *
+	 * @example
+	 * \`\`\`ts
+	 * import { ResultAsync } from '@hex-di/result';
+	 *
+	 * const result = ResultAsync.err("not found");
+	 * const inner = await result; // Err("not found")
+	 * \`\`\`
+	 *
+	 * @since v1.0.0
+	 * @see spec/result/behaviors/06-async.md — BEH-06-003
+	 */
+	static err<E>(error: E): ResultAsync<never, E>;
+	/**
+	 * Wraps a \`Promise<T>\` that might reject into a \`ResultAsync\`.
+	 *
+	 * Resolution produces \`Ok(value)\`. Rejection produces \`Err(mapErr(reason))\`.
+	 *
+	 * @example
+	 * \`\`\`ts
+	 * import { ResultAsync } from '@hex-di/result';
+	 *
+	 * const result = ResultAsync.fromPromise(
+	 *   fetch("/api/users").then(r => r.json()),
+	 *   (error) => \`Request failed: \${error}\`
+	 * );
+	 * \`\`\`
+	 *
+	 * @since v1.0.0
+	 * @see spec/result/behaviors/06-async.md — BEH-06-003
+	 */
+	static fromPromise<T, E>(promise: Promise<T>, mapErr: (error: unknown) => E): ResultAsync<T, E>;
+	/**
+	 * Wraps a \`Promise<T>\` that is guaranteed to never reject into a \`ResultAsync\`.
+	 *
+	 * Resolution produces \`Ok(value)\`. Since the promise never rejects, the error
+	 * type is \`never\`.
+	 *
+	 * @example
+	 * \`\`\`ts
+	 * import { ResultAsync } from '@hex-di/result';
+	 *
+	 * const result = ResultAsync.fromSafePromise(Promise.resolve(42));
+	 * const inner = await result; // Ok(42)
+	 * \`\`\`
+	 *
+	 * @since v1.0.0
+	 * @see spec/result/behaviors/06-async.md — BEH-06-003
+	 */
+	static fromSafePromise<T>(promise: Promise<T>): ResultAsync<T, never>;
+	/**
+	 * Creates a ResultAsync from a Promise that resolves to a Result.
+	 *
+	 * This is useful when you have an async function that already returns Result
+	 * values (e.g., sequential effect execution loops that check \`_tag\` and return
+	 * early on error). It avoids the need for \`andThen\` flattening, which has
+	 * inference issues in TypeScript 5.9.
+	 *
+	 * The promise must never reject — it should always resolve to either
+	 * ok(value) or err(error).
+	 *
+	 * @param promise - A Promise that resolves to a Result<T, E>
+	 * @returns A ResultAsync<T, E> wrapping the promise
+	 */
+	static fromResult<T, E>(promise: Promise<Result<T, E>>): ResultAsync<T, E>;
+	/**
+	 * Wraps an async function that might throw into a function returning \`ResultAsync\`.
+	 *
+	 * Returns a new function with the same parameter types that returns \`ResultAsync\`
+	 * instead of \`Promise\`. Rejections are caught and mapped via \`mapErr\`.
+	 *
+	 * @example
+	 * \`\`\`ts
+	 * import { ResultAsync } from '@hex-di/result';
+	 *
+	 * const safeReadFile = ResultAsync.fromThrowable(
+	 *   async (path: string) => fs.promises.readFile(path, "utf-8"),
+	 *   (error) => \`Read failed: \${error}\`
+	 * );
+	 *
+	 * const result = safeReadFile("config.json");
+	 * // ResultAsync<string, string>
+	 * \`\`\`
+	 *
+	 * @since v1.0.0
+	 * @see spec/result/behaviors/06-async.md — BEH-06-003
+	 */
+	static fromThrowable<A extends readonly unknown[], T, E>(fn: (...args: A) => Promise<T>, mapErr: (error: unknown) => E): (...args: A) => ResultAsync<T, E>;
+	static fromCallback<T, E>(fn: (callback: (error: E | null, value: T) => void) => void): ResultAsync<T, E>;
+	static race<R extends readonly ResultAsync<unknown, unknown>[]>(...results: R): ResultAsync<InferOkUnion<R>, InferErrUnion<R>>;
+	static all: typeof all;
+	static allSettled: typeof allSettled;
+	static any: typeof any;
+	static collect: typeof collect;
+	static partition: typeof partition;
+	static forEach: typeof forEach;
+	static zipOrAccumulate: typeof zipOrAccumulate;
+	then<A = Result<T, E>, B = never>(onfulfilled?: ((value: Result<T, E>) => A | PromiseLike<A>) | null | undefined, onrejected?: ((reason: unknown) => B | PromiseLike<B>) | null | undefined): PromiseLike<A | B>;
+	[Symbol.iterator](): Generator<ResultAsync<T, E>, T, T | typeof RESULT_ASYNC_YIELD>;
 	map<U>(f: (value: T) => U | Promise<U>): ResultAsync<U, E>;
 	mapErr<F>(f: (error: E) => F | Promise<F>): ResultAsync<T, F>;
 	mapBoth<U, F>(onOk: (value: T) => U | Promise<U>, onErr: (error: E) => F | Promise<F>): ResultAsync<U, F>;
@@ -748,6 +1116,19 @@ export interface ResultAsync<T, E> extends PromiseLike<Result<T, E>> {
 	]>;
 	merge(): Promise<T | E>;
 	flatten<U>(this: ResultAsync<Result<U, E>, E>): ResultAsync<U, E>;
+	catchTag<Tag extends string, T2>(tag: Tag, handler: (error: Extract<E, {
+		_tag: Tag;
+	}>) => Result<T2, never> | ResultAsync<T2, never>): ResultAsync<T | T2, Exclude<E, {
+		_tag: Tag;
+	}>>;
+	catchTags<Handlers extends Partial<{
+		[K in Extract<E, {
+			_tag: string;
+		}>["_tag"]]: (error: Extract<E, {
+			_tag: K;
+		}>) => Result<unknown, never> | ResultAsync<unknown, never>;
+	}>>(handlers: Handlers): any;
+	andThenWith<U, F, G>(onOk: (value: T) => Result<U, F> | ResultAsync<U, F>, onErr: (error: E) => Result<U, G> | ResultAsync<U, G>): ResultAsync<U, F | G>;
 	flip(): ResultAsync<E, T>;
 	toJSON(): Promise<{
 		_tag: "Ok";
@@ -803,6 +1184,21 @@ export interface Ok<T, E> {
 	andThrough<F>(f: (value: T) => Result<unknown, F>): Result<T, E | F>;
 	inspect(f: (value: T) => void): Ok<T, E>;
 	inspectErr(f: (error: E) => void): Ok<T, E>;
+	catchTag<Tag extends string, T2>(tag: Tag, handler: (error: Extract<E, {
+		_tag: Tag;
+	}>) => Result<T2, never>): Ok<T, Exclude<E, {
+		_tag: Tag;
+	}>>;
+	catchTags<Handlers extends Partial<{
+		[K in Extract<E, {
+			_tag: string;
+		}>["_tag"]]: (error: Extract<E, {
+			_tag: K;
+		}>) => Result<unknown, never>;
+	}>>(handlers: Handlers): Ok<T, Exclude<E, {
+		_tag: keyof Handlers & string;
+	}>>;
+	andThenWith<U, F, G>(onOk: (value: T) => Result<U, F>, onErr: (error: E) => Result<U, G>): Result<U, F>;
 	match<A, B>(onOk: (value: T) => A, onErr: (error: E) => B): A;
 	unwrapOr<U>(defaultValue: U): T;
 	unwrapOrElse<U>(f: (error: E) => U): T;
@@ -877,6 +1273,23 @@ export interface Err<T, E> {
 	andThrough<F>(f: (value: T) => Result<unknown, F>): Err<T, E>;
 	inspect(f: (value: T) => void): Err<T, E>;
 	inspectErr(f: (error: E) => void): Err<T, E>;
+	catchTag<Tag extends string, T2>(tag: Tag, handler: (error: Extract<E, {
+		_tag: Tag;
+	}>) => Result<T2, never>): Result<T | T2, Exclude<E, {
+		_tag: Tag;
+	}>>;
+	catchTags<Handlers extends Partial<{
+		[K in Extract<E, {
+			_tag: string;
+		}>["_tag"]]: (error: Extract<E, {
+			_tag: K;
+		}>) => Result<unknown, never>;
+	}>>(handlers: Handlers): Result<T | {
+		[K in keyof Handlers]: Handlers[K] extends (e: never) => Result<infer U, never> ? U : never;
+	}[keyof Handlers], Exclude<E, {
+		_tag: keyof Handlers & string;
+	}>>;
+	andThenWith<U, F, G>(onOk: (value: T) => Result<U, F>, onErr: (error: E) => Result<U, G>): Result<U, G>;
 	match<A, B>(onOk: (value: T) => A, onErr: (error: E) => B): B;
 	unwrapOr<U>(defaultValue: U): U;
 	unwrapOrElse<U>(f: (error: E) => U): U;
@@ -936,7 +1349,85 @@ export interface Err<T, E> {
  * @see {@link spec/result/behaviors/01-types-and-guards.md | BEH-01-006}
  */
 export type Result<T, E> = Ok<T, E> | Err<T, E>;
-/** Structured error for circular dependency detection (HEX002). */
+/**
+ * A suggestion tag indicating the type of refactoring to break a cycle.
+ */
+export type CycleSuggestionTag = "LazyEdge" | "InterfaceExtraction" | "EventDecoupling" | "ScopeSeparation";
+/**
+ * An actionable refactoring suggestion for breaking a circular dependency.
+ */
+export interface CycleSuggestion {
+	readonly _tag: CycleSuggestionTag;
+	readonly description: string;
+	readonly targetAdapter: string;
+	readonly targetPort: string;
+}
+/**
+ * Represents the set of adapter registrations in the graph, used to examine
+ * adapter metadata for suggestion generation.
+ */
+export interface GraphRegistrations {
+	readonly adapters: readonly AdapterConstraint[];
+}
+/**
+ * Generates refactoring suggestions for breaking a dependency cycle.
+ *
+ * For each edge in the cycle, evaluates the applicability of different
+ * refactoring strategies based on adapter metadata (lifetime, port categories,
+ * tags). Results are scored and sorted with the highest applicability first.
+ *
+ * Always returns at least one suggestion.
+ *
+ * @param cycle - Array of port names forming the cycle (last element equals first)
+ * @param registrations - The graph's adapter registrations for metadata lookup
+ * @returns A frozen array of suggestions, sorted by applicability (highest first)
+ */
+export declare function generateCycleSuggestions(cycle: ReadonlyArray<string>, registrations: GraphRegistrations): ReadonlyArray<CycleSuggestion>;
+/**
+ * Describes a lazy edge within a cycle, used for well-founded cycle reporting.
+ */
+export interface CycleLazyEdge {
+	readonly from: string;
+	readonly to: string;
+}
+/**
+ * Structured error for a single detected circular dependency.
+ *
+ * Contains the cycle path, a pre-formatted ASCII diagram, and
+ * actionable refactoring suggestions. When \`isWellFounded\` is true,
+ * the cycle is accepted (not an error) because lazy edges break it.
+ */
+export interface CycleError {
+	readonly _tag: "CycleDetected";
+	readonly cycle: ReadonlyArray<string>;
+	readonly diagram: string;
+	readonly suggestions: ReadonlyArray<CycleSuggestion>;
+	readonly message: string;
+	readonly isWellFounded: boolean;
+	readonly lazyEdges: ReadonlyArray<CycleLazyEdge>;
+}
+/**
+ * Structured error for multiple independent circular dependencies.
+ *
+ * When a graph contains 2+ independent cycles, each is reported separately
+ * with its own diagram and suggestions. The \`summary\` provides a human-readable
+ * count.
+ */
+export interface MultipleCyclesError {
+	readonly _tag: "MultipleCyclesDetected";
+	readonly cycles: ReadonlyArray<CycleError>;
+	readonly summary: string;
+	readonly message: string;
+}
+/**
+ * Discriminated union of all cycle-related errors.
+ */
+export type CycleDetectionError = CycleError | MultipleCyclesError;
+/**
+ * Structured error for circular dependency detection (HEX002).
+ *
+ * @deprecated Prefer \`CycleError\` from \`cycle-error.ts\` which includes diagrams and suggestions.
+ */
 export interface CyclicDependencyBuildError {
 	readonly _tag: "CyclicDependency";
 	readonly cyclePath: readonly string[];
@@ -957,8 +1448,20 @@ export interface MissingDependencyBuildError {
 	readonly missingPorts: readonly string[];
 	readonly message: string;
 }
+/**
+ * Structured error for incomplete adapter operations.
+ *
+ * Produced when a port declares \`methods\` metadata and the adapter
+ * factory returns an instance missing one or more of those methods.
+ */
+export interface MissingOperationBuildError {
+	readonly _tag: "MissingOperation";
+	readonly portName: string;
+	readonly missingMethods: readonly string[];
+	readonly message: string;
+}
 /** Errors that can occur during \`tryBuild()\` / \`tryBuildGraph()\`. */
-export type GraphBuildError = CyclicDependencyBuildError | CaptiveDependencyBuildError;
+export type GraphBuildError = CyclicDependencyBuildError | CaptiveDependencyBuildError | MissingOperationBuildError | CycleError | MultipleCyclesError;
 /** Errors that can occur during \`validate()\` (superset of GraphBuildError). */
 export type GraphValidationError = GraphBuildError | MissingDependencyBuildError;
 /**
@@ -988,12 +1491,66 @@ export declare class GraphBuildException extends Error {
 	constructor(error: GraphBuildError);
 }
 /**
- * Checks whether a value is a \`GraphBuildError\` (CyclicDependency or CaptiveDependency).
+ * Checks whether a value is a \`GraphBuildError\` (CyclicDependency, CaptiveDependency,
+ * MissingOperation, CycleDetected, or MultipleCyclesDetected).
  *
  * @param value - The value to check
- * @returns \`true\` if the value has a \`_tag\` of \`"CyclicDependency"\` or \`"CaptiveDependency"\`
+ * @returns \`true\` if the value has a valid GraphBuildError \`_tag\`
  */
 export declare function isGraphBuildError(value: unknown): value is GraphBuildError;
+/**
+ * Checks whether a value is a \`CycleError\`.
+ */
+export declare function isCycleError(value: unknown): value is CycleError;
+/**
+ * Checks whether a value is a \`MultipleCyclesError\`.
+ */
+export declare function isMultipleCyclesError(value: unknown): value is MultipleCyclesError;
+/**
+ * ASCII cycle diagram generator for circular dependency errors.
+ *
+ * Generates Unicode box-drawing diagrams that visually represent cycle paths,
+ * making circular dependency errors easier to understand at a glance.
+ * Supports lazy edge annotations for well-founded cycle reporting.
+ *
+ * @see spec/packages/graph/behaviors/06-enhanced-cycle-errors.md — BEH-GR-06-001
+ * @see spec/packages/graph/behaviors/08-well-founded-cycles.md — BEH-GR-08-003
+ * @see spec/packages/graph/decisions/002-ascii-cycle-diagrams.md — ADR-GR-002
+ * @packageDocumentation
+ */
+/**
+ * Generates an ASCII diagram for a dependency cycle using Unicode box-drawing characters.
+ *
+ * The diagram visually represents the cycle path with connecting lines and arrows:
+ *
+ * \`\`\`
+ * ┌─→ AuthService
+ * │     ↓ requires
+ * │   UserRepository
+ * │     ↓ requires
+ * │   EventBus
+ * └─────┘ requires (cycle closes here)
+ * \`\`\`
+ *
+ * When lazy edges are provided, the diagram annotates them:
+ *
+ * \`\`\`
+ * ┌─→ AuthService
+ * │     ↓ requires
+ * │   UserRepository
+ * │     ↓ requires (lazy)
+ * │   EventBus
+ * └─────┘ requires (cycle closes here)
+ * \`\`\`
+ *
+ * The cycle is normalized to start from the lexicographically smallest node name
+ * for deterministic output.
+ *
+ * @param cycle - Array of port names forming the cycle (last element equals first)
+ * @param lazyEdgeKeys - Optional set of lazy edge keys in format \`"from->to"\`
+ * @returns A pre-formatted ASCII diagram string
+ */
+export declare function generateCycleDiagram(cycle: ReadonlyArray<string>, lazyEdgeKeys?: ReadonlySet<string>): string;
 /**
  * Depth-Limited Recursion Utilities for Type-Level Graph Traversal.
  *
@@ -1376,7 +1933,7 @@ export type ForwardReferenceMarker<TPortName extends string> = {
  * | Type | Input | Output | Use Case |
  * |------|-------|--------|----------|
  * | \`AdapterProvidesName<A>\` | Adapter | \`"Logger"\` | Graph tracking, validation |
- * | \`InferAdapterProvides<A>\` | Adapter | \`Port<Logger, "Logger">\` | Container resolution |
+ * | \`InferAdapterProvides<A>\` | Adapter | \`Port<"Logger", Logger>\` | Container resolution |
  *
  * @typeParam TAdapter - The adapter type to extract from
  * @returns The port name as a string literal type, or \`never\` if not a valid adapter
@@ -3875,6 +4432,109 @@ export type FindSelfDependencyPort<TAdapters extends readonly unknown[]> = TAdap
 	...infer Rest extends readonly unknown[]
 ] ? HasSelfDependency<First> extends true ? AdapterProvidesName<First> : FindSelfDependencyPort<Rest> : never;
 /**
+ * @internal
+ */
+export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+type LastOfUnion\$1<U> = UnionToIntersection<U extends unknown ? () => U : never> extends () => infer Last ? Last : never;
+/**
+ * Converts a string union to a tuple.
+ * @internal
+ */
+export type UnionToTuple<U, TAcc extends readonly string[] = [
+]> = [
+	U
+] extends [
+	never
+] ? TAcc : LastOfUnion\$1<U> extends infer Last extends string ? UnionToTuple<Exclude<U, Last>, [
+	...TAcc,
+	Last
+]> : TAcc;
+/**
+ * Finds all source nodes: ports whose deps are all already processed.
+ * @internal
+ */
+export type FindSources<TDepGraph, TProvides extends string, TProcessed extends string> = TProvides extends infer P extends string ? P extends TProcessed ? never : [
+	Exclude<Extract<GetDirectDeps<TDepGraph, P>, string>, TProcessed>
+] extends [
+	never
+] ? P : never : never;
+/**
+ * Type-level topological sort producing initialization order.
+ * Uses source-removal (Kahn's algorithm) bounded to 50 iterations.
+ *
+ * @internal
+ */
+export type TopologicalSortImpl<TDepGraph, TProvides extends string, TProcessed extends string = never, TResult extends readonly string[] = [
+], TCounter extends readonly unknown[] = [
+]> = TCounter["length"] extends 50 ? string[] : [
+	Exclude<TProvides, TProcessed>
+] extends [
+	never
+] ? TResult : FindSources<TDepGraph, TProvides, TProcessed> extends infer TSources extends string ? [
+	TSources
+] extends [
+	never
+] ? string[] : UnionToTuple<TSources> extends infer TSourceTuple extends readonly string[] ? TopologicalSortImpl<TDepGraph, TProvides, TProcessed | TSources, readonly [
+	...TResult,
+	...TSourceTuple
+], [
+	...TCounter,
+	unknown
+]> : string[] : string[];
+/**
+ * Computes the type-level initialization order (topological sort) of a graph.
+ *
+ * Given a GraphBuilder, produces an ordered tuple of port names representing
+ * the initialization sequence. Ports with no dependencies appear first;
+ * ports that depend on others appear after their dependencies.
+ *
+ * For small graphs (up to ~50 ports), this produces an exact ordered tuple.
+ * For larger graphs, it gracefully degrades to \`string[]\`.
+ *
+ * @typeParam TBuilder - A GraphBuilder instance
+ *
+ * @example
+ * \`\`\`typescript
+ * const builder = GraphBuilder.create()
+ *   .provide(configAdapter)
+ *   .provide(dbAdapter)
+ *   .provide(userAdapter);
+ *
+ * // Type-level initialization order
+ * type Order = InitializationOrder<typeof builder>;
+ * // ["Config", "Database", "UserService"]
+ * \`\`\`
+ */
+export type InitializationOrder<TBuilder> = TBuilder extends {
+	__internalState: infer TInternals;
+} ? TInternals extends {
+	depGraph: infer TDepGraph;
+} ? Extract<keyof TDepGraph, string> extends infer TNames extends string ? TopologicalSortImpl<TDepGraph, TNames> : readonly string[] : readonly string[] : readonly string[];
+/**
+ * Checks whether an adapter's resolved instance implements all methods
+ * declared in the port's \`methods\` metadata.
+ *
+ * @param adapter - The adapter to check (uses its \`provides\` port for metadata)
+ * @param instance - The resolved service instance to verify
+ * @returns Array of missing method names, empty if all are present
+ *
+ * @example
+ * \`\`\`typescript
+ * const missing = checkOperationCompleteness(adapter, resolvedInstance);
+ * if (missing.length > 0) {
+ *   console.error(\`Missing methods: \${missing.join(', ')}\`);
+ * }
+ * \`\`\`
+ */
+export declare function checkOperationCompleteness(adapter: AdapterConstraint, instance: unknown): ReadonlyArray<string>;
+/**
+ * Gets the method names declared by a port's metadata.
+ *
+ * @param adapter - The adapter to check
+ * @returns The declared method names, or undefined if not specified
+ */
+export declare function getPortMethodNames(adapter: AdapterConstraint): ReadonlyArray<string> | undefined;
+/**
  * The validated dependency graph returned by \`GraphBuilder.build()\`.
  *
  * This type represents a complete, validated graph where all dependencies
@@ -4587,6 +5247,94 @@ export interface GraphInspection {
 		readonly id: string;
 		readonly name?: string;
 	};
+	/**
+	 * Initialization order of ports grouped into parallelizable levels.
+	 *
+	 * Each inner array is a set of ports that can be initialized in parallel
+	 * (all their dependencies are satisfied by previous levels). Levels are
+	 * ordered from sources (no dependencies) to leaves (most dependencies).
+	 *
+	 * Within each level, ports are ordered by adapter registration index
+	 * for deterministic output.
+	 *
+	 * For every dependency edge A -> B in the graph, B appears at an earlier
+	 * level than A.
+	 *
+	 * Returns an empty array for empty graphs, or null if cycle detected.
+	 *
+	 * @example
+	 * \`\`\`typescript
+	 * const info = builder.inspect();
+	 * // [["Config"], ["Database", "Cache"], ["UserService"]]
+	 * // Level 0: Config (no deps) can init first
+	 * // Level 1: Database and Cache (depend only on Config) can init in parallel
+	 * // Level 2: UserService (depends on Database and Cache) inits last
+	 * for (const [level, ports] of info.initializationOrder.entries()) {
+	 *   console.log(\`Level \${level}: \${ports.join(', ')}\`);
+	 * }
+	 * \`\`\`
+	 */
+	readonly initializationOrder: readonly (readonly string[])[];
+	/**
+	 * Capability audit report for all adapters in the graph.
+	 *
+	 * Summarizes ambient authority detections per adapter, providing
+	 * an overall authority hygiene score. Useful for CI/CD integration
+	 * where a pipeline step can fail the build if
+	 * \`capabilities.highConfidenceViolations > 0\`.
+	 *
+	 * @see {@link CapabilityAuditReport}
+	 *
+	 * @example
+	 * \`\`\`typescript
+	 * const info = builder.inspect();
+	 * if (info.capabilities.highConfidenceViolations > 0) {
+	 *   console.error(info.capabilities.summary);
+	 *   process.exitCode = 1;
+	 * }
+	 * \`\`\`
+	 */
+	readonly capabilities: CapabilityAuditReport;
+	/**
+	 * Transitive error profile for each port in the graph.
+	 *
+	 * Maps each port name to a sorted array of error tag strings that may be
+	 * produced transitively through the port's dependency chain. Computed from
+	 * the \`__errorTags\` metadata on adapters.
+	 *
+	 * A port with an empty array is considered infallible for inspection purposes.
+	 * Ports whose adapters do not declare \`errorTags\` are also treated as infallible.
+	 *
+	 * @example
+	 * \`\`\`typescript
+	 * const info = builder.inspect();
+	 * for (const [port, tags] of Object.entries(info.errorProfile)) {
+	 *   if (tags.length > 0) {
+	 *     console.warn(\`Port '\${port}' may produce errors: \${tags.join(', ')}\`);
+	 *   }
+	 * }
+	 * \`\`\`
+	 */
+	readonly errorProfile: Readonly<Record<string, readonly string[]>>;
+	/**
+	 * Warnings about ports with unhandled error tags in their transitive dependency chain.
+	 *
+	 * Each warning identifies a port whose effective error profile is non-empty,
+	 * suggesting that error handling (via \`adapterOrDie()\`, \`adapterOrElse()\`, or
+	 * \`adapterOrHandle()\`) should be applied before adding the adapter to the graph.
+	 *
+	 * @example
+	 * \`\`\`typescript
+	 * const info = builder.inspect();
+	 * if (info.effectWarnings.length > 0) {
+	 *   console.warn('Unhandled error tags detected:');
+	 *   for (const warning of info.effectWarnings) {
+	 *     console.warn(\`  - \${warning}\`);
+	 *   }
+	 * }
+	 * \`\`\`
+	 */
+	readonly effectWarnings: readonly string[];
 }
 /**
  * Result of validating a GraphBuilder.
@@ -5080,7 +5828,7 @@ export type OverrideTypeMismatchError<TPortName extends string> = \`ERROR[HEX021
 /**
  * Extracts the service type from a Port union by filtering for a specific port name.
  *
- * Given \`Port<Logger, "Logger"> | Port<Database, "Database">\` and name "Logger",
+ * Given \`Port<"Logger", Logger> | Port<"Database", Database>\` and name "Logger",
  * returns \`Logger\`.
  *
  * @internal
@@ -5526,7 +6274,7 @@ export declare class GraphBuilder<TProvides = never, TRequires = never, out TAsy
 		UnsatisfiedDependencies<TProvides, TRequires>
 	] extends [
 		never
-	] ? Graph<TProvides, TAsyncPorts, TOverrides> : \`ERROR[HEX008]: Missing adapters for \${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.\` : \`ERROR: Unhandled adapter error channels detected. Use adapterOrDie(adapter) or adapterOrElse(adapter, fallbackAdapter) to handle fallible adapters before providing them to the graph.\`;
+	] ? Graph<TProvides, TAsyncPorts, TOverrides> : \`ERROR[HEX008]: Missing adapters for \${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.\` : \`ERROR: Unhandled adapter error channels detected. Use adapterOrDie(adapter), adapterOrElse(adapter, fallbackAdapter), or adapterOrHandle(adapter, handlers) to handle fallible adapters before providing them to the graph.\`;
 	/**
 	 * Builds a graph fragment for child containers.
 	 *
@@ -5550,7 +6298,7 @@ export declare class GraphBuilder<TProvides = never, TRequires = never, out TAsy
 		UnsatisfiedDependencies<TProvides, TRequires>
 	] extends [
 		never
-	] ? Result<Graph<TProvides, TAsyncPorts, TOverrides>, GraphBuildError> : \`ERROR[HEX008]: Missing adapters for \${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.\` : \`ERROR: Unhandled adapter error channels detected. Use adapterOrDie(adapter) or adapterOrElse(adapter, fallbackAdapter) to handle fallible adapters before providing them to the graph.\`;
+	] ? Result<Graph<TProvides, TAsyncPorts, TOverrides>, GraphBuildError> : \`ERROR[HEX008]: Missing adapters for \${JoinPortNames<UnsatisfiedDependencies<TProvides, TRequires>>}. Call .provide() first.\` : \`ERROR: Unhandled adapter error channels detected. Use adapterOrDie(adapter), adapterOrElse(adapter, fallbackAdapter), or adapterOrHandle(adapter, handlers) to handle fallible adapters before providing them to the graph.\`;
 	/**
 	 * Builds a graph fragment for child containers, returning a Result instead of throwing.
 	 *

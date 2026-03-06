@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/graph-viz",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Generic graph visualization components with zoom/pan support and render props for customization",
   "type": "module",
   "main": "./dist/index.js",

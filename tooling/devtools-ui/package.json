@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/devtools-ui",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Shared UI components, panels, and visualization primitives for HexDI developer tools",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/logger-winston",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Winston backend adapter for @hex-di/logger",
   "type": "module",
   "main": "./dist/index.js",

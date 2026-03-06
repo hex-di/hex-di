@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/tracing-otel",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "OpenTelemetry bridge for HexDI distributed tracing",
   "type": "module",
   "main": "./dist/index.js",

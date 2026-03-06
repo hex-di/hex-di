@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/query",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Typed data fetching and caching for HexDI - port-based query keys, adapter-based fetchers, structural sharing, and container integration",
   "type": "module",
   "main": "./dist/index.js",

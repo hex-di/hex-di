@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/store-testing",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Testing utilities for @hex-di/store - mock adapters, assertions, and helpers",
   "type": "module",
   "main": "./dist/index.js",

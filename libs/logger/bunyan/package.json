@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/logger-bunyan",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Bunyan backend adapter for @hex-di/logger",
   "type": "module",
   "main": "./dist/index.js",

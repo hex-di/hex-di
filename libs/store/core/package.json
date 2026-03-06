@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/store",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Reactive state management for HexDI - state ports, adapters, signal-based reactivity, and container integration",
   "type": "module",
   "main": "./dist/index.js",

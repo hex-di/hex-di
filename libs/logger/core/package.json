@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/logger",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Structured logging support for HexDI - context-aware, type-safe, multiple backend support",
   "type": "module",
   "main": "./dist/index.js",

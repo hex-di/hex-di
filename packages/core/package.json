@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/core",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Core foundation for HexDI - ports, adapters, errors, inspection, and tracing primitives",
   "type": "module",
   "main": "./dist/index.js",

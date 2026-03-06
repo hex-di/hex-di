@@ -1,6 +1,6 @@
 {
   "name": "@hex-di/react",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "React integration for HexDI - type-safe hooks, Provider components, and automatic scope lifecycle management",
   "type": "module",
   "main": "./dist/index.js",
