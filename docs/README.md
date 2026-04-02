@@ -24,6 +24,10 @@ const graph = GraphBuilder.create()
 
 **The compiler reviews the architecture. You review the logic.**
 
+> **Start here:** New to HexDI? Jump to [Installation](./getting-started/installation.md) then follow the [Getting Started](#getting-started) path below. Contributing? See [CONTRIBUTING.md](https://github.com/leaderiop/hex-di/blob/main/CONTRIBUTING.md). AI agent? See [AGENTS.md](https://github.com/leaderiop/hex-di/blob/main/AGENTS.md).
+>
+> **Reading paths:** To understand how `docs/`, `spec/`, and root files relate, see the [Documentation Landscape](./documentation-landscape.md) or the persona-based [Onboarding Map](./onboarding-map.md).
+
 ---
 
 ## How It Works
@@ -43,20 +47,18 @@ Port → Adapter → Graph → Container
 
 ```typescript
 // 1. Define a contract
-const LoggerPort = port<Logger>()({ name: 'Logger' });
+const LoggerPort = port<Logger>()({ name: "Logger" });
 
 // 2. Declare an implementation with explicit dependencies
 const LoggerAdapter = createAdapter({
   provides: LoggerPort,
   requires: [],
-  lifetime: 'singleton',
-  factory: () => ({ log: console.log })
+  lifetime: "singleton",
+  factory: () => ({ log: console.log }),
 });
 
 // 3. Build a structurally validated graph
-const graph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .build();
+const graph = GraphBuilder.create().provide(LoggerAdapter).build();
 
 // 4. Resolve services at runtime
 const container = createContainer({ graph, name: "App" });
@@ -103,13 +105,13 @@ Most architectural rules in software are conventions: agreed upon, documented, c
 
 HexDI makes architectural rules into structural facts:
 
-| Problem | HexDI makes it a compile error |
-|---|---|
-| Missing dependency | `"ERROR[HEX008]: Missing adapters for Logger. Call .provide() first."` |
-| Duplicate provider | `"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call."` |
-| Circular dependency | `"ERROR[HEX002]: Circular dependency: A -> B -> A. Fix: ..."` |
-| Resolving unknown port | TypeScript error at call site |
-| Wrong lifetime scope | `ScopeRequiredError` at resolution |
+| Problem                | HexDI makes it a compile error                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| Missing dependency     | `"ERROR[HEX008]: Missing adapters for Logger. Call .provide() first."`              |
+| Duplicate provider     | `"ERROR[HEX001]: Duplicate adapter for 'Logger'. Fix: Remove one .provide() call."` |
+| Circular dependency    | `"ERROR[HEX002]: Circular dependency: A -> B -> A. Fix: ..."`                       |
+| Resolving unknown port | TypeScript error at call site                                                       |
+| Wrong lifetime scope   | `ScopeRequiredError` at resolution                                                  |
 
 ### Architecture as a living object, not a diagram that drifts.
 
@@ -195,19 +197,66 @@ New to HexDI? Follow this path:
 
 HexDI is more than a DI container. Every library in the ecosystem exposes its functionality as **ports** — contracts wired through the same container. Your application becomes a self-describing system: the container knows what it provides, how it's connected, and what each part is doing at runtime.
 
-| Library | Purpose |
-|---|---|
-| `@hex-di/logger` | Structured logging with swappable backends (pino, winston, bunyan) |
-| `@hex-di/tracing` | Distributed tracing with W3C Trace Context (OTel, Datadog, Jaeger, Zipkin) |
-| `@hex-di/query` | Port-based data fetching and caching |
-| `@hex-di/store` | Signal-based reactive state as a DI port |
-| `@hex-di/flow` | State machines as dependency-injected services |
-| `@hex-di/saga` | Distributed workflow orchestration |
-| `@hex-di/guard` | Role/permission/policy evaluation as a typed port |
-| `@hex-di/clock` | Testable time — injectable clock port with virtual time support |
-| `@hex-di/http-client` | Typed HTTP client port with interceptors and retry |
+| Library               | Purpose                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| `@hex-di/logger`      | Structured logging with swappable backends (pino, winston, bunyan)         |
+| `@hex-di/tracing`     | Distributed tracing with W3C Trace Context (OTel, Datadog, Jaeger, Zipkin) |
+| `@hex-di/query`       | Port-based data fetching and caching                                       |
+| `@hex-di/store`       | Signal-based reactive state as a DI port                                   |
+| `@hex-di/flow`        | State machines as dependency-injected services                             |
+| `@hex-di/saga`        | Distributed workflow orchestration                                         |
+| `@hex-di/guard`       | Role/permission/policy evaluation as a typed port                          |
+| `@hex-di/clock`       | Testable time — injectable clock port with virtual time support            |
+| `@hex-di/http-client` | Typed HTTP client port with interceptors and retry                         |
 
 All libraries are designed to be composed together through the graph. See the [repository README](https://github.com/hex-di/hex-di) for the full package list.
+
+## Operations
+
+- [Runbook](./runbook.md) — Local setup, release process, CI pipeline, troubleshooting
+- [Debug Playbook](./debug-playbook.md) — Incident response, CI flake triage, release rollback
+- [Documentation Map](./onboarding-map.md) — Where docs live, source-of-truth hierarchy, reading paths by persona
+
+## Ecosystem Navigation
+
+Documentation is distributed across three surfaces. Use this section as a single entry point.
+
+### Package Documentation Sites
+
+Each published package has a dedicated Docusaurus site under `websites/`:
+
+| Site                   | Package               | Content                                            |
+| ---------------------- | --------------------- | -------------------------------------------------- |
+| `websites/core`        | `@hex-di/core`        | Ports, adapters, error types, well-known contracts |
+| `websites/result`      | `@hex-di/result`      | Result monad, Option, async patterns, do-notation  |
+| `websites/guard`       | `@hex-di/guard`       | RBAC, policies, audit trails, GxP compliance       |
+| `websites/clock`       | `@hex-di/clock`       | Time ports, branded timestamps, virtual time       |
+| `websites/logger`      | `@hex-di/logger`      | Structured logging, backends, trace correlation    |
+| `websites/tracing`     | `@hex-di/tracing`     | Distributed tracing, W3C Trace Context, exporters  |
+| `websites/query`       | `@hex-di/query`       | Data fetching, caching, invalidation               |
+| `websites/store`       | `@hex-di/store`       | Signal-based reactive state                        |
+| `websites/flow`        | `@hex-di/flow`        | State machines as DI services                      |
+| `websites/saga`        | `@hex-di/saga`        | Distributed workflow orchestration                 |
+| `websites/http-client` | `@hex-di/http-client` | Typed HTTP client, interceptors, retry             |
+| `websites/crypto`      | `@hex-di/crypto`      | Cryptographic operations port                      |
+
+### Specifications
+
+The `spec/` directory contains formal behavioral specifications, ADRs, and traceability matrices:
+
+- [Spec Map](./spec-map.md) — how docs and specs relate, reading paths by audience
+- [ADR Index](./decisions/README.md) — 161 Architecture Decision Records across 12 scopes
+- `spec/<package>/` — per-package behaviors, capabilities, invariants, and decisions
+
+### Cross-Site Navigation
+
+Every Docusaurus site includes a **Libraries** dropdown in the navbar linking all other sites. The footer also cross-links to ecosystem packages. For full-text search across all sites, configure [Algolia DocSearch](https://docsearch.algolia.com/) with a shared crawler targeting all `*.hexdi.dev` subdomains.
+
+### Cross-Cutting References
+
+- [Architecture](./architecture.md) — layer diagram, dependency rules, enforcement tooling
+- [Glossary](./glossary.md) — domain terminology used across the codebase
+- [Onboarding Map](./onboarding-map.md) — persona-based reading paths
 
 ## Getting Help
 

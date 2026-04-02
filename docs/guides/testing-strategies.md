@@ -132,10 +132,9 @@ describe("UserService integration", () => {
     // Create container from test graph
     const container = createContainer({ graph: testGraph, name: "Test" });
 
-    const result = await container.tryResolve(UserServicePort)
-      .asyncAndThen((userService) =>
-        fromPromise(userService.createUser("Test User"), (e) => e),
-      );
+    const result = await container
+      .tryResolve(UserServicePort)
+      .asyncAndThen(userService => fromPromise(userService.createUser("Test User"), e => e));
     await container.tryDispose();
 
     expect(result.isOk()).toBe(true);
@@ -520,11 +519,7 @@ describe("production graph", () => {
 ```typescript
 // tests/chat-service.test.ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  createAdapterTest,
-  TestGraphBuilder,
-  createMockAdapter,
-} from "@hex-di/testing";
+import { createAdapterTest, TestGraphBuilder, createMockAdapter } from "@hex-di/testing";
 import { useTestContainer } from "@hex-di/testing/vitest";
 import { ChatServiceAdapter } from "../src/di/adapters";
 import { appGraph } from "../src/di/graph";
@@ -582,7 +577,62 @@ describe("ChatService", () => {
 });
 ```
 
+## Type-Safe Test Helpers
+
+Test files have relaxed ESLint rules that allow `any` for mocking flexibility. However, prefer `unknown` with type guards or typed helper functions when possible:
+
+### Prefer typed mock factories
+
+```typescript
+// Prefer: typed mock factory
+function createMockLogger(): Logger {
+  return {
+    log: vi.fn(),
+    error: vi.fn(),
+  };
+}
+
+// Avoid: untyped object with `any`
+const mockLogger: any = { log: vi.fn(), error: vi.fn() };
+```
+
+### Shared test fixtures
+
+Extract common port definitions and adapter factories into a `tests/fixtures/` directory:
+
+```typescript
+// tests/fixtures/ports.ts
+export const LoggerPort = port<Logger>()({ name: "Logger" });
+
+export function createNoopLoggerAdapter() {
+  return createAdapter({
+    provides: LoggerPort,
+    requires: [],
+    lifetime: "singleton",
+    factory: () => ({ log: () => {}, error: () => {} }),
+  });
+}
+```
+
+This reduces duplication across test files and ensures consistent type contracts. See `packages/runtime/tests/fixtures/ports.ts` for a reference implementation.
+
+### When `any` is acceptable in tests
+
+- When mutation testing (Stryker) requires flexible mocks that bypass type checks
+- When testing error paths where the exact type of a thrown value is irrelevant
+- When interfacing with third-party test utilities that return `any`
+
+In all other cases, use `unknown` with type narrowing or fully typed mock factories.
+
 ## Next Steps
 
 - Explore [Error Handling](./error-handling.md) for testing error cases
 - See [React Integration](./react-integration.md) for component testing patterns
+
+## Specifications
+
+For formal behavioral contracts and invariants behind the testing package, see:
+
+- [`spec/packages/result/testing/`](https://github.com/leaderiop/hex-di/blob/main/spec/packages/result/testing/) — Result-Testing behaviors and BDD scenarios
+- [`spec/packages/core/behaviors/`](https://github.com/leaderiop/hex-di/blob/main/spec/packages/core/behaviors/) — core adapter and port behavioral contracts
+- [`spec/packages/graph/behaviors/`](https://github.com/leaderiop/hex-di/blob/main/spec/packages/graph/behaviors/) — graph validation behavioral contracts

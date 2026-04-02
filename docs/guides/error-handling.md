@@ -201,10 +201,10 @@ import { resolveResult, FactoryError } from "@hex-di/runtime";
 
 const result = resolveResult(() => container.resolve(SomePort));
 result.match(
-  (service) => {
+  service => {
     // use service
   },
-  (error) => {
+  error => {
     switch (error.code) {
       case "CIRCULAR_DEPENDENCY":
         console.error("Fix your dependency graph!");
@@ -220,7 +220,7 @@ result.match(
         console.error("Scope was already disposed");
         throw error;
     }
-  },
+  }
 );
 ```
 
@@ -229,8 +229,8 @@ result.match(
 ```typescript
 function resolveService<P extends AppPorts>(port: P): InferService<P> | null {
   return container.tryResolve(port).match(
-    (service) => service,
-    (error) => {
+    service => service,
+    error => {
       if (error.isProgrammingError) {
         // Log and re-throw — this is a bug
         console.error("Programming error:", error.message);
@@ -239,7 +239,7 @@ function resolveService<P extends AppPorts>(port: P): InferService<P> | null {
       // Handle gracefully — this is an external failure
       console.warn("Service unavailable:", error.message);
       return null; // Or fallback value
-    },
+    }
   );
 }
 ```
@@ -252,7 +252,7 @@ import type { Result, ContainerError } from "@hex-di/runtime";
 
 async function resolveWithRetry<P extends AppPorts>(
   port: P,
-  maxRetries = 3,
+  maxRetries = 3
 ): Promise<Result<InferService<P>, ContainerError>> {
   let last = container.tryResolve(port);
   for (let attempt = 1; attempt < maxRetries && last.isErr(); attempt++) {
@@ -446,3 +446,10 @@ Check that:
 
 - Learn about [Testing Strategies](./testing-strategies.md) for error testing
 - Review the [Runtime API Reference](../api/runtime.md)
+
+## Specifications
+
+For formal behavioral contracts and invariants behind error handling, see:
+
+- [`spec/packages/core/behaviors/`](https://github.com/leaderiop/hex-di/blob/main/spec/packages/core/behaviors/) — core error type behavioral contracts
+- [`spec/packages/result/behaviors/`](https://github.com/leaderiop/hex-di/blob/main/spec/packages/result/behaviors/) — Result type behavioral contracts

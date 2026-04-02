@@ -55,12 +55,12 @@ const logger = container.resolve(LoggerPort);
 
 ### Error Classes
 
-| Error                     | Code                  | When                               |
-| ------------------------- | --------------------- | ---------------------------------- |
-| `CircularDependencyError` | `CIRCULAR_DEPENDENCY` | Cycle detected in the graph        |
-| `FactoryError`            | `FACTORY_FAILED`      | Adapter factory threw              |
-| `DisposedScopeError`      | `DISPOSED_SCOPE`      | Resolution after scope disposed    |
-| `ScopeRequiredError`      | `SCOPE_REQUIRED`      | Scoped service resolved at root    |
+| Error                     | Code                  | When                            |
+| ------------------------- | --------------------- | ------------------------------- |
+| `CircularDependencyError` | `CIRCULAR_DEPENDENCY` | Cycle detected in the graph     |
+| `FactoryError`            | `FACTORY_FAILED`      | Adapter factory threw           |
+| `DisposedScopeError`      | `DISPOSED_SCOPE`      | Resolution after scope disposed |
+| `ScopeRequiredError`      | `SCOPE_REQUIRED`      | Scoped service resolved at root |
 
 ## Package Dependencies
 
@@ -88,3 +88,57 @@ import { port, createAdapter, GraphBuilder, createContainer } from "hex-di";
 ```typescript
 import { ok, err, type Result } from "@hex-di/result";
 ```
+
+---
+
+## HTTP API Specs (OpenAPI)
+
+The example applications expose OpenAPI 3.1 specifications at runtime. CI verifies these against committed snapshots to detect accidental drift.
+
+| Application   | Endpoint           | Snapshot                                                                                                                                     |
+| ------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| hono-todo     | `GET /openapi`     | [`examples/hono-todo/openapi-snapshot.json`](https://github.com/leaderiop/hex-di/blob/main/examples/hono-todo/openapi-snapshot.json)         |
+| pokenerve API | `GET /api/openapi` | [`examples/pokenerve/api/openapi-snapshot.json`](https://github.com/leaderiop/hex-di/blob/main/examples/pokenerve/api/openapi-snapshot.json) |
+
+To regenerate snapshots after intentional schema changes:
+
+```bash
+cd examples/hono-todo
+pnpm build && node dist/server.js &
+sleep 2
+curl -s http://localhost:4000/openapi | jq . > openapi-snapshot.json
+kill %1
+
+cd examples/pokenerve/api
+pnpm build && node dist/server.js &
+sleep 2
+curl -s http://localhost:3001/api/openapi | jq . > openapi-snapshot.json
+kill %1
+```
+
+See the [Schema-First OpenAPI guide](../guides/openapi.md) for the Zod/Hono pattern used to define these specs.
+
+---
+
+## Generated Reference
+
+Full API reference auto-generated from TypeScript source via [TypeDoc](https://typedoc.org/):
+
+```bash
+pnpm docs:api    # regenerate from source
+```
+
+Output is written to `docs/api/generated/` (gitignored, generate on demand).
+
+### Regeneration Policy
+
+- Generated API docs under `docs/api/generated/` are **not** committed — they are gitignored and regenerated locally or in CI on demand.
+- Run `pnpm docs:api` after changing any public API type signature to regenerate.
+- The hand-written API reference pages (this directory's `.md` files) **are** committed and must be updated manually when public APIs change.
+- CI does not currently diff generated docs; regeneration is a manual step before publishing documentation.
+
+See [docs/improvements.md](../improvements.md) for the full improvement backlog.
+
+## OpenAPI
+
+HTTP-facing example applications publish OpenAPI specs via `@hono/zod-openapi`. CI validates these specs against committed snapshots — see the [OpenAPI Snapshot guide](../guides/openapi-snapshots.md) for details.

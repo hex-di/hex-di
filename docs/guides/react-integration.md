@@ -480,17 +480,18 @@ const hooks = createTypedHooks<AppPorts>();
 Create a new container per request:
 
 ```typescript
-import { fromPromise } from '@hex-di/result';
+import { fromPromise } from "@hex-di/result";
 
 // Next.js example
 export async function getServerSideProps(context) {
   const container = createContainer({ graph, name: "SSR" });
-  const result = await container.tryResolve(DataServicePort)
-    .asyncAndThen((dataService) => fromPromise(dataService.fetchData(), (e) => e));
+  const result = await container
+    .tryResolve(DataServicePort)
+    .asyncAndThen(dataService => fromPromise(dataService.fetchData(), e => e));
   await container.tryDispose();
   return result.match(
-    (data) => ({ props: { data } }),
-    (error) => ({ notFound: true }),
+    data => ({ props: { data } }),
+    error => ({ notFound: true })
   );
 }
 ```
@@ -588,3 +589,9 @@ export function ChatRoom() {
 
 - Learn [Testing Strategies](./testing-strategies.md) for React components
 - See [Scoped Services](../patterns/scoped-services.md) patterns
+
+## Specifications
+
+For formal behavioral contracts and invariants behind the React integration, see:
+
+- [`spec/packages/result/react/`](https://github.com/leaderiop/hex-di/blob/main/spec/packages/result/react/) — Result-React behavioral contracts and capabilities

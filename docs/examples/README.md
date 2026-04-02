@@ -30,6 +30,61 @@ pnpm dev
 
 ---
 
+## Hono Todo API
+
+A REST API example with per-request DI scopes, bearer auth, distributed tracing, and auto-generated OpenAPI documentation.
+
+```bash
+cd examples/hono-todo
+pnpm install
+pnpm dev          # starts on http://localhost:3000
+```
+
+### API endpoints
+
+| Endpoint                   | Description                                          |
+| -------------------------- | ---------------------------------------------------- |
+| `GET /openapi`             | OpenAPI 3.1.0 JSON spec (generated from Zod schemas) |
+| `GET /reference`           | Interactive API explorer (Scalar UI, Saturn theme)   |
+| `GET /me`                  | Current authenticated user                           |
+| `GET /todos`               | List todos for authenticated user                    |
+| `POST /todos`              | Create a todo                                        |
+| `PATCH /todos/{id}/toggle` | Toggle todo completion                               |
+
+All endpoints except `/openapi` and `/reference` require `Authorization: Bearer <token>`.
+
+**Auth tokens**: `Bearer user-token` (regular user), `Bearer admin-token` (admin).
+
+### Key patterns
+
+| Pattern             | Implementation                                                           |
+| ------------------- | ------------------------------------------------------------------------ |
+| OpenAPI from Zod    | `@hono/zod-openapi` — schemas defined once, used for validation and docs |
+| Per-request scopes  | `createScopeMiddleware(container)` from `@hex-di/hono`                   |
+| Port resolution     | `resolvePort(c, TodoServicePort)` in route handlers                      |
+| Distributed tracing | `tracingMiddleware()` with W3C Trace Context                             |
+
+See the [full example README](https://github.com/leaderiop/hex-di/blob/main/examples/hono-todo/README.md) for curl examples and DDD layer mapping.
+
+---
+
+## Observability Baseline
+
+Each example demonstrates different observability features from the HexDI ecosystem:
+
+| Feature                 | hono-todo                       | pokenerve/api                   | react-showcase               |
+| ----------------------- | ------------------------------- | ------------------------------- | ---------------------------- |
+| **Logger**              | `@hex-di/logger` (console JSON) | `@hex-di/logger` + Pino handler | Local `LoggerPort` (console) |
+| **Health endpoint**     | `GET /health`                   | `GET /api/health`               | N/A (SPA)                    |
+| **Distributed tracing** | Console middleware              | Jaeger export + W3C propagation | Console + DI instrumentation |
+| **Error tracking**      | No-op adapter                   | Sentry (optional via DSN)       | None                         |
+| **Diagnostics**         | `createDiagnosticRoutes()`      | `createDiagnosticRoutes()`      | None                         |
+| **Request ID**          | `x-request-id` header           | W3C trace context               | N/A                          |
+
+**Minimum baseline for new server examples:** wire a `LoggerPort` adapter (even console-based), add a `GET /health` endpoint, and optionally mount `createDiagnosticRoutes()` from `@hex-di/hono`.
+
+---
+
 ## Code Snippets
 
 ### Basic Setup
@@ -65,8 +120,8 @@ export const LoggerAdapter = createAdapter({
   requires: [],
   lifetime: "singleton",
   factory: () => ({
-    log:   msg => console.log(`[INFO] ${msg}`),
-    warn:  msg => console.warn(`[WARN] ${msg}`),
+    log: msg => console.log(`[INFO] ${msg}`),
+    warn: msg => console.warn(`[WARN] ${msg}`),
     error: msg => console.error(`[ERROR] ${msg}`),
   }),
 });
@@ -77,7 +132,7 @@ export const ConfigAdapter = createAdapter({
   lifetime: "singleton",
   factory: () => ({
     apiUrl: process.env.API_URL ?? "http://localhost:3000",
-    debug:  process.env.NODE_ENV !== "production",
+    debug: process.env.NODE_ENV !== "production",
   }),
 });
 ```
@@ -87,10 +142,7 @@ export const ConfigAdapter = createAdapter({
 import { GraphBuilder } from "@hex-di/graph";
 import { LoggerAdapter, ConfigAdapter } from "./adapters";
 
-export const appGraph = GraphBuilder.create()
-  .provide(LoggerAdapter)
-  .provide(ConfigAdapter)
-  .build();
+export const appGraph = GraphBuilder.create().provide(LoggerAdapter).provide(ConfigAdapter).build();
 ```
 
 ```typescript
@@ -168,11 +220,11 @@ import { createContainer } from "@hex-di/runtime";
 
 describe("ChatService", () => {
   it("sends message with user info", () => {
-    const mockLogger  = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const mockLogger = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const mockSession = { userId: "test-user", startedAt: new Date() };
 
     const harness = createAdapterTest(ChatServiceAdapter, {
-      Logger:      mockLogger,
+      Logger: mockLogger,
       UserSession: mockSession,
     });
 
@@ -184,14 +236,14 @@ describe("ChatService", () => {
 
   it("integrates with overridden logger", () => {
     const mockLogger = createMockAdapter(LoggerPort, {
-      log:   vi.fn(),
-      warn:  vi.fn(),
+      log: vi.fn(),
+      warn: vi.fn(),
       error: vi.fn(),
     });
 
     const testGraph = TestGraphBuilder.from(appGraph).override(mockLogger).build();
     const container = createContainer({ graph: testGraph, name: "Test" });
-    const scope     = container.createScope();
+    const scope = container.createScope();
 
     const chat = scope.resolve(ChatServicePort);
     chat.sendMessage("Test message");
@@ -221,14 +273,18 @@ app.use((req, res, next) => {
   req.scope = scope;
 
   scope.tryResolve(RequestContextPort).match(
-    (context) => {
+    context => {
       context.requestId = (req.headers["x-request-id"] as string) ?? crypto.randomUUID();
-      context.userId    = req.user?.id;
+      context.userId = req.user?.id;
     },
-    (error) => { console.error("Failed to resolve RequestContext:", error); },
+    error => {
+      console.error("Failed to resolve RequestContext:", error);
+    }
   );
 
-  res.on("finish", () => { void scope.tryDispose(); });
+  res.on("finish", () => {
+    void scope.tryDispose();
+  });
   next();
 });
 
@@ -260,8 +316,8 @@ export const ConsoleLoggerAdapter = createAdapter({
   requires: [],
   lifetime: "singleton",
   factory: () => ({
-    log:   msg => console.log(msg),
-    warn:  msg => console.warn(msg),
+    log: msg => console.log(msg),
+    warn: msg => console.warn(msg),
     error: msg => console.error(msg),
   }),
 });
@@ -272,7 +328,7 @@ export const CloudLoggerAdapter = createAdapter({
   lifetime: "singleton",
   factory: deps =>
     new CloudWatchLogger({
-      region:   deps.Config.awsRegion,
+      region: deps.Config.awsRegion,
       logGroup: deps.Config.logGroup,
     }),
 });
@@ -284,7 +340,10 @@ const baseBuilder = GraphBuilder.create()
   .provide(UserServiceAdapter);
 
 // Same base graph, different implementations per environment
-export const devGraph  = baseBuilder.provide(ConsoleLoggerAdapter).provide(InMemoryCacheAdapter).build();
+export const devGraph = baseBuilder
+  .provide(ConsoleLoggerAdapter)
+  .provide(InMemoryCacheAdapter)
+  .build();
 export const prodGraph = baseBuilder.provide(CloudLoggerAdapter).provide(RedisCacheAdapter).build();
 
 export const appGraph = process.env.NODE_ENV === "production" ? prodGraph : devGraph;
@@ -304,14 +363,14 @@ export const appGraph = process.env.NODE_ENV === "production" ? prodGraph : devG
 
 ### Quick reference
 
-| Task               | Documentation                                                |
-| ------------------ | ------------------------------------------------------------ |
-| Create a port      | [Core API](../api/core.md)                                   |
-| Create an adapter  | [Graph API](../api/graph.md)                                 |
-| Build a graph      | [Graph API](../api/graph.md)                                 |
-| Create a container | [Runtime API](../api/runtime.md)                             |
-| Use in React       | [React Guide](../guides/react-integration.md)                |
-| Write tests        | [Testing Guide](../guides/testing-strategies.md)             |
+| Task               | Documentation                                    |
+| ------------------ | ------------------------------------------------ |
+| Create a port      | [Core API](../api/core.md)                       |
+| Create an adapter  | [Graph API](../api/graph.md)                     |
+| Build a graph      | [Graph API](../api/graph.md)                     |
+| Create a container | [Runtime API](../api/runtime.md)                 |
+| Use in React       | [React Guide](../guides/react-integration.md)    |
+| Write tests        | [Testing Guide](../guides/testing-strategies.md) |
 
 ---
 
