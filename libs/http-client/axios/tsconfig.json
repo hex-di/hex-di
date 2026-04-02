@@ -4,8 +4,9 @@
     "rootDir": ".",
     "outDir": "./dist",
     "composite": true,
-    "lib": ["ES2022", "DOM"]
+    "skipLibCheck": true,
+    "lib": ["ES2022", "ESNext.Disposable"]
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts", "../core/src/web-standards.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
