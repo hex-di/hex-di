@@ -42,7 +42,7 @@ const offlinePokemonListAdapter = createAdapter({
   provides: PokemonListPort,
   lifetime: "singleton",
   factory: () => ({
-    async list(params: {
+    list(params: {
       offset: number;
       limit: number;
       type?: string;
@@ -52,12 +52,14 @@ const offlinePokemonListAdapter = createAdapter({
         return true;
       });
       const slice = filtered.slice(params.offset, params.offset + params.limit);
-      return ok({
-        count: filtered.length,
-        next: params.offset + params.limit < filtered.length ? "has-more" : null,
-        previous: params.offset > 0 ? "has-prev" : null,
-        results: slice.map(p => ({ name: p.name, url: `/pokemon/${p.id}` })),
-      });
+      return Promise.resolve(
+        ok({
+          count: filtered.length,
+          next: params.offset + params.limit < filtered.length ? "has-more" : null,
+          previous: params.offset > 0 ? "has-prev" : null,
+          results: slice.map(p => ({ name: p.name, url: `/pokemon/${p.id}` })),
+        })
+      );
     },
   }),
 });
@@ -70,18 +72,18 @@ const offlinePokemonDetailAdapter = createAdapter({
   provides: PokemonDetailPort,
   lifetime: "singleton",
   factory: () => ({
-    async getById(id: number): Promise<Result<Pokemon, PokemonApiError>> {
+    getById(id: number): Promise<Result<Pokemon, PokemonApiError>> {
       const found = pokemonData.find(p => p.id === id);
-      if (!found) return err(NotFoundError({ pokemonId: id }));
-      return ok(found);
+      if (!found) return Promise.resolve(err(NotFoundError({ pokemonId: id })));
+      return Promise.resolve(ok(found));
     },
-    async getByName(name: string): Promise<Result<Pokemon, PokemonApiError>> {
+    getByName(name: string): Promise<Result<Pokemon, PokemonApiError>> {
       const found = pokemonData.find(p => p.name === name);
-      if (!found) return err(NotFoundError({ pokemonId: name }));
-      return ok(found);
+      if (!found) return Promise.resolve(err(NotFoundError({ pokemonId: name })));
+      return Promise.resolve(ok(found));
     },
-    async getSpecies(id: number): Promise<Result<PokemonSpecies, PokemonApiError>> {
-      return err(NotFoundError({ pokemonId: id }));
+    getSpecies(id: number): Promise<Result<PokemonSpecies, PokemonApiError>> {
+      return Promise.resolve(err(NotFoundError({ pokemonId: id })));
     },
   }),
 });

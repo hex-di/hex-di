@@ -99,7 +99,7 @@ tradingRoutes.post("/trading/initiate", async c => {
 });
 
 // POST /trading/:id/step - advance the saga by one step
-tradingRoutes.post("/trading/:id/step", async c => {
+tradingRoutes.post("/trading/:id/step", c => {
   const id = c.req.param("id");
   const state = trades.get(id);
 

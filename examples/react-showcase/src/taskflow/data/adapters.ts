@@ -336,7 +336,7 @@ function createTaskCacheService(queryClient: QueryClient): TaskCacheService {
       if (context.previousTasks) {
         // Rollback list queries - this is simplified, real implementation
         // would need to restore the exact previous state
-        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
       }
       if (context.previousTask !== undefined) {
         const id = context.previousTask?.id;

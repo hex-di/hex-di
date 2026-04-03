@@ -190,7 +190,7 @@ export function useRouteStateMachine(
 
           // Only navigate if path is different
           if (targetPath !== location.pathname) {
-            navigate(targetPath);
+            void navigate(targetPath);
           }
         }
       }
@@ -308,8 +308,6 @@ export function useRouteStateMachine(
       error: snapshotRef.current.context.error,
     }),
     [
-      // Using forceUpdateRef.current as dependency to trigger re-render
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       forceUpdateRef.current,
       navigateToDashboard,
       navigateToTask,

@@ -109,6 +109,173 @@ function shouldFailInChaosMode(state: TradeSagaState): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Sync advance-step logic (extracted to avoid async-without-await)
+// ---------------------------------------------------------------------------
+
+function advanceCompensationStep(
+  tradeStates: Map<string, TradeSagaState>,
+  tradeId: string,
+  existing: TradeSagaState
+): Result<TradeSagaState, TradingError> {
+  const compIdx = findCurrentCompensationStepIndex(existing);
+  if (compIdx < 0) {
+    const completed: TradeSagaState = {
+      ...existing,
+      currentStep: null,
+      isComplete: true,
+    };
+    tradeStates.set(tradeId, completed);
+    return ok(completed);
+  }
+
+  const compStep = existing.compensationSteps[compIdx];
+  if (compStep === undefined) {
+    return ok(existing);
+  }
+
+  const compStepName = compStep.name;
+  const now = Date.now();
+
+  const executing: TradeSagaState = {
+    ...existing,
+    currentStep: compStepName,
+    compensationSteps: updateStepInList(existing.compensationSteps, compStepName, {
+      status: "executing",
+      startedAt: now,
+    }),
+  };
+  tradeStates.set(tradeId, executing);
+
+  const completed: TradeSagaState = {
+    ...executing,
+    compensationSteps: updateStepInList(executing.compensationSteps, compStepName, {
+      status: "compensated",
+      completedAt: Date.now(),
+    }),
+  };
+
+  const nextCompIdx = compIdx + 1;
+  if (nextCompIdx >= existing.compensationSteps.length) {
+    const finalState: TradeSagaState = {
+      ...completed,
+      currentStep: null,
+      isComplete: true,
+    };
+    tradeStates.set(tradeId, finalState);
+    return ok(finalState);
+  }
+
+  const nextCompStep = existing.compensationSteps[nextCompIdx];
+  const finalState: TradeSagaState = {
+    ...completed,
+    currentStep: nextCompStep !== undefined ? nextCompStep.name : null,
+  };
+  tradeStates.set(tradeId, finalState);
+  return ok(finalState);
+}
+
+function advanceForwardStep(
+  tradeStates: Map<string, TradeSagaState>,
+  tradeId: string,
+  existing: TradeSagaState
+): Result<TradeSagaState, TradingError> {
+  const fwdIdx = findCurrentForwardStepIndex(existing);
+  if (fwdIdx < 0) {
+    const completed: TradeSagaState = {
+      ...existing,
+      currentStep: null,
+      isComplete: true,
+    };
+    tradeStates.set(tradeId, completed);
+    return ok(completed);
+  }
+
+  const fwdStep = existing.forwardSteps[fwdIdx];
+  if (fwdStep === undefined) {
+    return ok(existing);
+  }
+
+  const fwdStepName = fwdStep.name;
+  const now = Date.now();
+
+  const executing: TradeSagaState = {
+    ...existing,
+    currentStep: fwdStepName,
+    forwardSteps: updateStepInList(existing.forwardSteps, fwdStepName, {
+      status: "executing",
+      startedAt: now,
+    }),
+  };
+  tradeStates.set(tradeId, executing);
+
+  if (
+    fwdStepName !== "initiate_trade" &&
+    fwdStepName !== "complete" &&
+    shouldFailInChaosMode(existing)
+  ) {
+    const failedState: TradeSagaState = {
+      ...executing,
+      forwardSteps: updateStepInList(executing.forwardSteps, fwdStepName, {
+        status: "failed",
+        completedAt: Date.now(),
+        error: `Chaos mode failure at step: ${fwdStepName}`,
+      }),
+      isCompensating: true,
+      currentStep: COMPENSATION_STEP_NAMES[0] ?? null,
+    };
+    tradeStates.set(tradeId, failedState);
+    return ok(failedState);
+  }
+
+  const completed: TradeSagaState = {
+    ...executing,
+    forwardSteps: updateStepInList(executing.forwardSteps, fwdStepName, {
+      status: "completed",
+      completedAt: Date.now(),
+    }),
+  };
+
+  const nextFwdIdx = fwdIdx + 1;
+  if (nextFwdIdx >= existing.forwardSteps.length) {
+    const finalState: TradeSagaState = {
+      ...completed,
+      currentStep: null,
+      isComplete: true,
+    };
+    tradeStates.set(tradeId, finalState);
+    return ok(finalState);
+  }
+
+  const nextFwdStep = existing.forwardSteps[nextFwdIdx];
+  const finalState: TradeSagaState = {
+    ...completed,
+    currentStep: nextFwdStep !== undefined ? nextFwdStep.name : null,
+  };
+  tradeStates.set(tradeId, finalState);
+  return ok(finalState);
+}
+
+function advanceStepSync(
+  tradeStates: Map<string, TradeSagaState>,
+  tradeId: string
+): Result<TradeSagaState, TradingError> {
+  const existing = tradeStates.get(tradeId);
+  if (existing === undefined) {
+    return err(TradeNotFound({ tradeId }));
+  }
+
+  if (existing.isComplete) {
+    return ok(existing);
+  }
+
+  if (existing.isCompensating) {
+    return advanceCompensationStep(tradeStates, tradeId, existing);
+  }
+
+  return advanceForwardStep(tradeStates, tradeId, existing);
+}
+
+// ---------------------------------------------------------------------------
 // Trading adapter
 // ---------------------------------------------------------------------------
 
@@ -119,7 +286,7 @@ const tradingAdapter = createAdapter({
     const tradeStates = new Map<string, TradeSagaState>();
 
     return {
-      async initiateTrade(
+      initiateTrade(
         offeredPokemon: Pokemon,
         requestedPokemon: Pokemon
       ): Promise<Result<TradeOffer, TradingError>> {
@@ -140,172 +307,21 @@ const tradingAdapter = createAdapter({
           updatedAt: now,
         };
 
-        return ok(offer);
+        return Promise.resolve(ok(offer));
       },
 
-      async advanceStep(tradeId: string): Promise<Result<TradeSagaState, TradingError>> {
+      advanceStep(tradeId: string): Promise<Result<TradeSagaState, TradingError>> {
+        return Promise.resolve(advanceStepSync(tradeStates, tradeId));
+      },
+
+      cancelTrade(tradeId: string): Promise<Result<TradeSagaState, TradingError>> {
         const existing = tradeStates.get(tradeId);
         if (existing === undefined) {
-          return err(TradeNotFound({ tradeId }));
+          return Promise.resolve(err(TradeNotFound({ tradeId })));
         }
 
         if (existing.isComplete) {
-          return ok(existing);
-        }
-
-        // --- Compensation path ---
-        if (existing.isCompensating) {
-          const compIdx = findCurrentCompensationStepIndex(existing);
-          if (compIdx < 0) {
-            // All compensation steps done
-            const completed: TradeSagaState = {
-              ...existing,
-              currentStep: null,
-              isComplete: true,
-            };
-            tradeStates.set(tradeId, completed);
-            return ok(completed);
-          }
-
-          const compStep = existing.compensationSteps[compIdx];
-          if (compStep === undefined) {
-            return ok(existing);
-          }
-
-          const compStepName = compStep.name;
-          const now = Date.now();
-
-          // Mark step as executing
-          const executing: TradeSagaState = {
-            ...existing,
-            currentStep: compStepName,
-            compensationSteps: updateStepInList(existing.compensationSteps, compStepName, {
-              status: "executing",
-              startedAt: now,
-            }),
-          };
-          tradeStates.set(tradeId, executing);
-
-          // Complete the compensation step
-          const completed: TradeSagaState = {
-            ...executing,
-            compensationSteps: updateStepInList(executing.compensationSteps, compStepName, {
-              status: "compensated",
-              completedAt: Date.now(),
-            }),
-          };
-
-          // Check if this was the last compensation step
-          const nextCompIdx = compIdx + 1;
-          if (nextCompIdx >= existing.compensationSteps.length) {
-            const finalState: TradeSagaState = {
-              ...completed,
-              currentStep: null,
-              isComplete: true,
-            };
-            tradeStates.set(tradeId, finalState);
-            return ok(finalState);
-          }
-
-          const nextCompStep = existing.compensationSteps[nextCompIdx];
-          const finalState: TradeSagaState = {
-            ...completed,
-            currentStep: nextCompStep !== undefined ? nextCompStep.name : null,
-          };
-          tradeStates.set(tradeId, finalState);
-          return ok(finalState);
-        }
-
-        // --- Forward path ---
-        const fwdIdx = findCurrentForwardStepIndex(existing);
-        if (fwdIdx < 0) {
-          // All forward steps are done
-          const completed: TradeSagaState = {
-            ...existing,
-            currentStep: null,
-            isComplete: true,
-          };
-          tradeStates.set(tradeId, completed);
-          return ok(completed);
-        }
-
-        const fwdStep = existing.forwardSteps[fwdIdx];
-        if (fwdStep === undefined) {
-          return ok(existing);
-        }
-
-        const fwdStepName = fwdStep.name;
-        const now = Date.now();
-
-        // Mark step as executing
-        const executing: TradeSagaState = {
-          ...existing,
-          currentStep: fwdStepName,
-          forwardSteps: updateStepInList(existing.forwardSteps, fwdStepName, {
-            status: "executing",
-            startedAt: now,
-          }),
-        };
-        tradeStates.set(tradeId, executing);
-
-        // Check for chaos failure (not on the first or last step)
-        if (
-          fwdStepName !== "initiate_trade" &&
-          fwdStepName !== "complete" &&
-          shouldFailInChaosMode(existing)
-        ) {
-          const failedState: TradeSagaState = {
-            ...executing,
-            forwardSteps: updateStepInList(executing.forwardSteps, fwdStepName, {
-              status: "failed",
-              completedAt: Date.now(),
-              error: `Chaos mode failure at step: ${fwdStepName}`,
-            }),
-            isCompensating: true,
-            currentStep: COMPENSATION_STEP_NAMES[0] ?? null,
-          };
-          tradeStates.set(tradeId, failedState);
-          return ok(failedState);
-        }
-
-        // Complete the forward step
-        const completed: TradeSagaState = {
-          ...executing,
-          forwardSteps: updateStepInList(executing.forwardSteps, fwdStepName, {
-            status: "completed",
-            completedAt: Date.now(),
-          }),
-        };
-
-        // Advance to next step or mark complete
-        const nextFwdIdx = fwdIdx + 1;
-        if (nextFwdIdx >= existing.forwardSteps.length) {
-          const finalState: TradeSagaState = {
-            ...completed,
-            currentStep: null,
-            isComplete: true,
-          };
-          tradeStates.set(tradeId, finalState);
-          return ok(finalState);
-        }
-
-        const nextFwdStep = existing.forwardSteps[nextFwdIdx];
-        const finalState: TradeSagaState = {
-          ...completed,
-          currentStep: nextFwdStep !== undefined ? nextFwdStep.name : null,
-        };
-        tradeStates.set(tradeId, finalState);
-        return ok(finalState);
-      },
-
-      async cancelTrade(tradeId: string): Promise<Result<TradeSagaState, TradingError>> {
-        const existing = tradeStates.get(tradeId);
-        if (existing === undefined) {
-          return err(TradeNotFound({ tradeId }));
-        }
-
-        if (existing.isComplete) {
-          return ok(existing);
+          return Promise.resolve(ok(existing));
         }
 
         // Begin compensation
@@ -315,7 +331,7 @@ const tradingAdapter = createAdapter({
           currentStep: COMPENSATION_STEP_NAMES[0] ?? null,
         };
         tradeStates.set(tradeId, cancelledState);
-        return ok(cancelledState);
+        return Promise.resolve(ok(cancelledState));
       },
 
       getTradeState(tradeId: string): Result<TradeSagaState, TradingError> {

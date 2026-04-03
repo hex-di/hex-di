@@ -265,7 +265,7 @@ export function TaskList({
 
   // Error state
   if (error) {
-    return <ErrorState error={error} onRetry={() => refetch()} />;
+    return <ErrorState error={error} onRetry={() => void refetch()} />;
   }
 
   // Empty state

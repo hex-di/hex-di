@@ -127,9 +127,9 @@ const queryClient = new QueryClient({
  * Only loads when navigating to /taskflow.
  */
 const lazyTaskflowContainer = rootContainer.createLazyChild(
-  async () => {
+  () => {
     // Graph fragment is created here with access to queryClient
-    return createTaskflowGraphFragment(queryClient);
+    return Promise.resolve(createTaskflowGraphFragment(queryClient));
   },
   { name: "TaskFlow" }
 );

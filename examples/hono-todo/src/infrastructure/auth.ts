@@ -13,18 +13,18 @@ export const AuthAdapter = createAdapter({
   requires: [LoggerPort],
   lifetime: "scoped",
   factory: deps => {
-    const authenticate = async (token: string | null | undefined) => {
+    const authenticate = (token: string | null | undefined): Promise<User | null> => {
       if (!token) {
         deps.Logger.info("Anonymous request");
-        return null;
+        return Promise.resolve(null);
       }
       const user = tokens[token];
       if (!user) {
         deps.Logger.info("Invalid token rejected");
-        return null;
+        return Promise.resolve(null);
       }
       deps.Logger.info("Authenticated", { user: user.id });
-      return user;
+      return Promise.resolve(user);
     };
     const requireUser = async (token: string | null | undefined) => {
       const user = await authenticate(token);

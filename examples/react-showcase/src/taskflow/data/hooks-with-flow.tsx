@@ -134,7 +134,7 @@ export function useCreateTaskWithFlow(): FlowAwareMutationResult<Task, Error, Cr
       send({ type: "ERROR" });
 
       // Rollback optimistic update
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
     },
   });
 
@@ -146,7 +146,7 @@ export function useCreateTaskWithFlow(): FlowAwareMutationResult<Task, Error, Cr
     data: mutation.data,
     flowState: state,
     flowContext: context,
-    resetFlow: () => send({ type: "RESET" }),
+    resetFlow: () => void send({ type: "RESET" }),
   };
 }
 
@@ -239,7 +239,7 @@ export function useUpdateTaskWithFlow(): FlowAwareMutationResult<Task, Error, Up
     data: mutation.data,
     flowState: state,
     flowContext: context,
-    resetFlow: () => send({ type: "RESET" }),
+    resetFlow: () => void send({ type: "RESET" }),
   };
 }
 
@@ -318,7 +318,7 @@ export function useDeleteTaskWithFlow(): FlowAwareMutationResult<void, Error, st
     data: mutation.data,
     flowState: state,
     flowContext: context,
-    resetFlow: () => send({ type: "RESET" }),
+    resetFlow: () => void send({ type: "RESET" }),
   };
 }
 
@@ -403,7 +403,7 @@ export function useToggleTaskCompleteWithFlow(): FlowAwareMutationResult<Task, E
     data: mutation.data,
     flowState: state,
     flowContext: context,
-    resetFlow: () => send({ type: "RESET" }),
+    resetFlow: () => void send({ type: "RESET" }),
   };
 }
 

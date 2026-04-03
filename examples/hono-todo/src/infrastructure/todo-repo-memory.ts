@@ -10,24 +10,24 @@ export const InMemoryTodoRepositoryAdapter = createAdapter({
   factory: () => {
     const store = new Map<string, Todo[]>();
     return {
-      async list(userId) {
-        return store.get(userId) ?? [];
+      list(userId) {
+        return Promise.resolve(store.get(userId) ?? []);
       },
-      async add(userId, title) {
+      add(userId, title) {
         const todos = store.get(userId) ?? [];
         const todo: Todo = { id: crypto.randomUUID?.() ?? `${Date.now()}`, title, done: false };
         todos.push(todo);
         store.set(userId, todos);
-        return todo;
+        return Promise.resolve(todo);
       },
-      async toggle(userId, id) {
+      toggle(userId, id) {
         const todos = store.get(userId) ?? [];
         const todo = todos.find(item => item.id === id);
         if (!todo) {
           throw new TodoNotFoundError(id);
         }
         todo.done = !todo.done;
-        return todo;
+        return Promise.resolve(todo);
       },
     };
   },

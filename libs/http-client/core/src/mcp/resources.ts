@@ -44,7 +44,7 @@ export interface HttpClientMcpConfig {
  * ```
  */
 export function createHttpClientMcpResources(
-  config?: HttpClientMcpConfig,
+  config?: HttpClientMcpConfig
 ): ReadonlyArray<McpResourceHandler> {
   const uriPrefix = config?.uriPrefix ?? "http-client://";
   const clientName = config?.clientName ?? "default";
@@ -56,7 +56,7 @@ export function createHttpClientMcpResources(
       description: "List of registered HTTP client instances",
       mimeType: "application/json",
     },
-    read: async () => JSON.stringify({ clients: [clientName], count: 1 }),
+    read: () => Promise.resolve(JSON.stringify({ clients: [clientName], count: 1 })),
   };
 
   const healthResource: McpResourceHandler = {
@@ -66,8 +66,7 @@ export function createHttpClientMcpResources(
       description: "Current health status of the HTTP client",
       mimeType: "application/json",
     },
-    read: async () =>
-      JSON.stringify({ status: "healthy", timestamp: Date.now() }),
+    read: () => Promise.resolve(JSON.stringify({ status: "healthy", timestamp: Date.now() })),
   };
 
   const auditTrailResource: McpResourceHandler = {
@@ -77,8 +76,7 @@ export function createHttpClientMcpResources(
       description: "Audit trail of HTTP operations",
       mimeType: "application/json",
     },
-    read: async () =>
-      JSON.stringify({ entries: [], count: 0, lastHash: "00000000" }),
+    read: () => Promise.resolve(JSON.stringify({ entries: [], count: 0, lastHash: "00000000" })),
   };
 
   return Object.freeze([clientListResource, healthResource, auditTrailResource]);

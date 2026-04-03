@@ -168,11 +168,12 @@ export function createSagaTestHarness(
       if (!lastExecutionId) return null;
       return runner.getTrace(lastExecutionId);
     },
-    async dispose(): Promise<void> {
+    dispose(): Promise<void> {
       calls.clear();
       events.length = 0;
       lastExecutionId = null;
       executionCounter = 0;
+      return Promise.resolve();
     },
   };
 }

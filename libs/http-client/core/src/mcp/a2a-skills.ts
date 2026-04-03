@@ -42,7 +42,7 @@ export interface HttpClientA2aConfig {
  * ```
  */
 export function createHttpClientA2aSkills(
-  config?: HttpClientA2aConfig,
+  config?: HttpClientA2aConfig
 ): ReadonlyArray<A2aSkillHandler> {
   const prefix = config?.idPrefix ?? "http-client";
 
@@ -62,12 +62,12 @@ export function createHttpClientA2aSkills(
         required: ["method", "url"],
       },
     },
-    execute: async (input) => {
-      return {
+    execute: input => {
+      return Promise.resolve({
         status: "not_connected",
         message: "HTTP client not connected. Register an HttpClient instance.",
         input,
-      };
+      });
     },
   };
 
@@ -84,12 +84,12 @@ export function createHttpClientA2aSkills(
         required: ["url"],
       },
     },
-    execute: async (input) => {
-      return {
+    execute: input => {
+      return Promise.resolve({
         status: "not_connected",
         message: "HTTP client not connected. Register an HttpClient instance.",
         input,
-      };
+      });
     },
   };
 

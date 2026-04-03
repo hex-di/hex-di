@@ -211,7 +211,7 @@ export function StatsCards() {
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-600 text-sm">Failed to load statistics</p>
         <button
-          onClick={() => refetch()}
+          onClick={() => void refetch()}
           className="mt-2 text-sm text-red-700 underline hover:no-underline"
         >
           Try again

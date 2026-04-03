@@ -66,13 +66,13 @@ function NewTaskPage() {
         variant: "success",
         autoDismissMs: 5000,
       });
-      navigate(RELATIVE_ROUTES.DASHBOARD);
+      void navigate(RELATIVE_ROUTES.DASHBOARD);
     },
     [navigate, showNotification]
   );
 
   const handleCancel = React.useCallback(() => {
-    navigate(RELATIVE_ROUTES.DASHBOARD);
+    void navigate(RELATIVE_ROUTES.DASHBOARD);
   }, [navigate]);
 
   return (
@@ -140,7 +140,7 @@ function OnboardingPage() {
 
   React.useEffect(() => {
     if (shouldRedirect && !isLoading) {
-      navigate(redirectPath, { replace: true });
+      void navigate(redirectPath, { replace: true });
     }
   }, [shouldRedirect, redirectPath, isLoading, navigate]);
 
@@ -163,7 +163,7 @@ function OnboardingPage() {
     <OnboardingWizard
       userSessionStore={stores.userSessionStore}
       uiPreferencesStore={stores.uiPreferencesStore}
-      onComplete={() => navigate(RELATIVE_ROUTES.DASHBOARD, { replace: true })}
+      onComplete={() => void navigate(RELATIVE_ROUTES.DASHBOARD, { replace: true })}
     />
   );
 }
