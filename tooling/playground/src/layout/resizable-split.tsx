@@ -66,6 +66,39 @@ function writePersistedRatio(key: string, ratio: number): void {
 // Component
 // ---------------------------------------------------------------------------
 
+function computeKeyboardDelta(
+  e: React.KeyboardEvent,
+  direction: "horizontal" | "vertical",
+  splitterWidth: number,
+  getTotalSize: () => number
+): number | undefined {
+  const isHorizontal = direction === "horizontal";
+  const forwardKey = isHorizontal ? "ArrowRight" : "ArrowDown";
+  const backwardKey = isHorizontal ? "ArrowLeft" : "ArrowUp";
+
+  if (e.key !== forwardKey && e.key !== backwardKey) return undefined;
+
+  const totalSize = getTotalSize();
+  const availableSize = totalSize - splitterWidth;
+  if (availableSize <= 0) return undefined;
+
+  const stepPx = e.shiftKey ? 50 : 10;
+  const stepRatio = stepPx / availableSize;
+  return e.key === forwardKey ? stepRatio : -stepRatio;
+}
+
+function resolveSplitterColor(isDragging: boolean, isHovering: boolean): string {
+  if (isDragging) return "var(--hex-accent-muted, rgba(99, 102, 241, 0.3))";
+  if (isHovering) return "var(--hex-accent-muted, rgba(99, 102, 241, 0.15))";
+  return "var(--hex-bg-tertiary, #ebebf0)";
+}
+
+function resolveGripColor(isDragging: boolean, isHovering: boolean): string {
+  if (isDragging) return "var(--hex-accent, #6366f1)";
+  if (isHovering) return "var(--hex-text-muted, #94a3b8)";
+  return "var(--hex-border-strong, #c8c8d4)";
+}
+
 /**
  * ResizableSplit renders two panes separated by a draggable splitter.
  *
@@ -180,21 +213,11 @@ export function ResizableSplit(props: ResizableSplitProps): React.ReactElement {
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      const isHorizontal = direction === "horizontal";
-      const forwardKey = isHorizontal ? "ArrowRight" : "ArrowDown";
-      const backwardKey = isHorizontal ? "ArrowLeft" : "ArrowUp";
-
-      if (e.key !== forwardKey && e.key !== backwardKey) return;
+      const delta = computeKeyboardDelta(e, direction, splitterWidth, getTotalSize);
+      if (delta === undefined) return;
 
       e.preventDefault();
-
       const totalSize = getTotalSize();
-      const availableSize = totalSize - splitterWidth;
-      if (availableSize <= 0) return;
-
-      const stepPx = e.shiftKey ? 50 : 10;
-      const stepRatio = stepPx / availableSize;
-      const delta = e.key === forwardKey ? stepRatio : -stepRatio;
       const newRatio = clampRatio(ratio + delta, totalSize);
       updateRatio(newRatio);
     },
@@ -220,11 +243,7 @@ export function ResizableSplit(props: ResizableSplitProps): React.ReactElement {
   const cursorType = isHorizontal ? "col-resize" : "row-resize";
 
   // Splitter visual state
-  const splitterBg = isDragging
-    ? "var(--hex-accent-muted, rgba(99, 102, 241, 0.3))"
-    : isHovering
-      ? "var(--hex-accent-muted, rgba(99, 102, 241, 0.15))"
-      : "var(--hex-bg-tertiary, #ebebf0)";
+  const splitterBg = resolveSplitterColor(isDragging, isHovering);
 
   return (
     <div
@@ -284,11 +303,7 @@ export function ResizableSplit(props: ResizableSplitProps): React.ReactElement {
             width: isHorizontal ? 2 : 24,
             height: isHorizontal ? 24 : 2,
             borderRadius: 1,
-            backgroundColor: isDragging
-              ? "var(--hex-accent, #6366f1)"
-              : isHovering
-                ? "var(--hex-text-muted, #94a3b8)"
-                : "var(--hex-border-strong, #c8c8d4)",
+            backgroundColor: resolveGripColor(isDragging, isHovering),
             opacity: isDragging || isHovering ? 1 : 0.6,
             transition: isDragging ? "none" : "opacity 0.15s ease, background-color 0.15s ease",
           }}

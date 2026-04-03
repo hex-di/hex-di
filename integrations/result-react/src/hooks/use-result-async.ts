@@ -1,4 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  type MutableRefObject,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { Result, ResultAsync } from "@hex-di/result";
 
 /**
@@ -63,10 +71,61 @@ export interface UseResultAsyncReturn<T, E> {
  * @since v0.1.0
  * @see {@link https://github.com/hex-di/result/blob/main/spec/result-react/behaviors/02-async-hooks.md | BEH-R02-001}
  */
+async function executeWithRetry<T, E>(
+  fn: (signal: AbortSignal) => ResultAsync<T, E>,
+  controller: AbortController,
+  options: UseResultAsyncOptions<E> | undefined,
+  generation: number,
+  generationRef: MutableRefObject<number>,
+  setState: Dispatch<SetStateAction<{ result: Result<T, E> | undefined; isLoading: boolean }>>
+): Promise<void> {
+  const maxAttempts = (options?.retry ?? 0) + 1;
+  const retryOn = options?.retryOn ?? (() => true);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (controller.signal.aborted) return;
+
+    const result = await fn(controller.signal);
+
+    if (controller.signal.aborted) return;
+
+    if (result.isOk() || attempt === maxAttempts - 1 || !retryOn(result.error)) {
+      if (generation === generationRef.current) {
+        setState({ result, isLoading: false });
+      }
+      return;
+    }
+
+    await waitForDelay(controller, options?.retryDelay, attempt, result.error);
+  }
+}
+
+async function waitForDelay<E>(
+  controller: AbortController,
+  retryDelay: number | ((attempt: number, error: E) => number) | undefined,
+  attempt: number,
+  error: E
+): Promise<void> {
+  const delay =
+    typeof retryDelay === "function" ? retryDelay(attempt, error) : (retryDelay ?? 1000);
+
+  await new Promise<void>(resolve => {
+    const timer = setTimeout(resolve, delay);
+    controller.signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true }
+    );
+  });
+}
+
 export function useResultAsync<T, E>(
   fn: (signal: AbortSignal) => ResultAsync<T, E>,
   deps: React.DependencyList,
-  options?: UseResultAsyncOptions<E>,
+  options?: UseResultAsyncOptions<E>
 ): UseResultAsyncReturn<T, E> {
   const [state, setState] = useState<{
     result: Result<T, E> | undefined;
@@ -76,56 +135,15 @@ export function useResultAsync<T, E>(
   const generationRef = useRef(0);
   const [refetchCount, setRefetchCount] = useState(0);
 
-  const refetch = useMemo(
-    () => () => setRefetchCount((c) => c + 1),
-    [],
-  );
+  const refetch = useMemo(() => () => setRefetchCount(c => c + 1), []);
 
   useEffect(() => {
     const controller = new AbortController();
     const generation = ++generationRef.current;
 
-    setState((prev) => ({ ...prev, isLoading: true }));
+    setState(prev => ({ ...prev, isLoading: true }));
 
-    const execute = async () => {
-      const maxAttempts = (options?.retry ?? 0) + 1;
-      const retryOn = options?.retryOn ?? (() => true);
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (controller.signal.aborted) return;
-
-        const result = await fn(controller.signal);
-
-        if (controller.signal.aborted) return;
-
-        if (result.isOk() || attempt === maxAttempts - 1 || !retryOn(result.error)) {
-          if (generation === generationRef.current) {
-            setState({ result, isLoading: false });
-          }
-          return;
-        }
-
-        // Wait before retry
-        const delay =
-          typeof options?.retryDelay === "function"
-            ? options.retryDelay(attempt, result.error)
-            : (options?.retryDelay ?? 1000);
-
-        await new Promise<void>((resolve) => {
-          const timer = setTimeout(resolve, delay);
-          controller.signal.addEventListener(
-            "abort",
-            () => {
-              clearTimeout(timer);
-              resolve();
-            },
-            { once: true },
-          );
-        });
-      }
-    };
-
-    void execute();
+    void executeWithRetry(fn, controller, options, generation, generationRef, setState);
 
     return () => {
       controller.abort();
