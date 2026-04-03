@@ -182,7 +182,7 @@ export function OnboardingWizard({
     if (onComplete) {
       onComplete();
     } else {
-      navigate("/", { replace: true });
+      void navigate("/", { replace: true });
     }
   }, [navigate, onComplete]);
 
@@ -191,10 +191,10 @@ export function OnboardingWizard({
       // Handle quick start actions
       switch (actionId) {
         case "create-project":
-          navigate("/taskflow/projects/new");
+          void navigate("/taskflow/projects/new");
           break;
         case "add-task":
-          navigate("/taskflow/tasks/new");
+          void navigate("/taskflow/tasks/new");
           break;
         case "quick-tour":
           // Could open a tour modal or navigate to tour page
@@ -242,7 +242,7 @@ export function OnboardingWizard({
         {currentStep === 3 && (
           <Step3Preferences
             initialData={formData.preferences}
-            onComplete={handleStep3Complete}
+            onComplete={(data) => void handleStep3Complete(data)}
             onBack={handleBack}
             isSubmitting={isSubmitting}
           />

@@ -124,14 +124,14 @@ export function DashboardPage() {
   // Handle task click - navigate to task detail
   const handleTaskClick = useCallback(
     (task: Task) => {
-      navigate(`/tasks/${task.id}`);
+      void navigate(`/tasks/${task.id}`);
     },
     [navigate]
   );
 
   // Handle create task - navigate to new task form
   const handleCreateTask = useCallback(() => {
-    navigate("/tasks/new");
+    void navigate("/tasks/new");
   }, [navigate]);
 
   // Handle task edit (placeholder - would open modal in full implementation)

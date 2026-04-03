@@ -370,7 +370,7 @@ export function TaskCreationForm({ onSuccess, onCancel, initialData }: TaskCreat
             <button
               type="button"
               data-testid="form-submit-button"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
               disabled={!isCurrentStepValid || isSubmitting}
               className={`
                 flex items-center gap-2 px-6 py-2 rounded-lg font-medium
