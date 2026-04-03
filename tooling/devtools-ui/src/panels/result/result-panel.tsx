@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { Component, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Component, useCallback, useEffect, useState } from "react";
 import { getStabilityZoneColor } from "./visual-encoding.js";
 import type {
   ResultChainDescriptor,

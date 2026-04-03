@@ -8,7 +8,14 @@
  */
 
 import { designTokens } from "./tokens.js";
+import type { DesignTokens } from "./tokens.js";
 import type { ResolvedTheme } from "../panels/types.js";
+
+type ColorTokens = DesignTokens["light"];
+
+function isColorTokenKey(tokens: ColorTokens, key: string): key is keyof ColorTokens {
+  return key in tokens;
+}
 
 /**
  * Mapping from design token color keys to CSS custom property names.
@@ -60,9 +67,8 @@ export function generateCssVariables(theme: ResolvedTheme): Record<string, strin
 
   // Color tokens (theme-specific)
   for (const [key, cssProperty] of colorPropertyMap) {
-    const value = colorTokens[key as keyof typeof colorTokens];
-    if (value !== undefined) {
-      variables[cssProperty] = value;
+    if (isColorTokenKey(colorTokens, key)) {
+      variables[cssProperty] = colorTokens[key];
     }
   }
 

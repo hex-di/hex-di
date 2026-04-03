@@ -358,65 +358,98 @@ function EvolutionControls({
 }
 
 /**
+ * Checks a single evolution detail for which controls it implies.
+ */
+interface EvolutionDetail {
+  readonly min_level: number | null;
+  readonly min_happiness: number | null;
+  readonly min_affection: number | null;
+  readonly item: { readonly name: string } | null;
+  readonly held_item: { readonly name: string } | null;
+  readonly location: { readonly name: string } | null;
+  readonly time_of_day: string;
+  readonly trigger: { readonly name: string };
+  readonly needs_overworld_rain: boolean;
+  readonly turn_upside_down: boolean;
+}
+
+function scanDetail(detail: EvolutionDetail): Partial<VisibleControls> {
+  return {
+    level: detail.min_level !== null,
+    friendship: detail.min_happiness !== null,
+    affection: detail.min_affection !== null,
+    heldItem: detail.item !== null || detail.held_item !== null,
+    location: detail.location !== null,
+    timeOfDay: detail.time_of_day !== "",
+    trading: detail.trigger.name === "trade",
+    rain: detail.needs_overworld_rain,
+    upsideDown: detail.turn_upside_down,
+  };
+}
+
+function mergeControls(base: VisibleControls, patch: Partial<VisibleControls>): VisibleControls {
+  return {
+    level: base.level || patch.level === true,
+    friendship: base.friendship || patch.friendship === true,
+    affection: base.affection || patch.affection === true,
+    heldItem: base.heldItem || patch.heldItem === true,
+    location: base.location || patch.location === true,
+    timeOfDay: base.timeOfDay || patch.timeOfDay === true,
+    trading: base.trading || patch.trading === true,
+    rain: base.rain || patch.rain === true,
+    upsideDown: base.upsideDown || patch.upsideDown === true,
+  };
+}
+
+function hasAnyVisible(controls: VisibleControls): boolean {
+  return (
+    controls.level ||
+    controls.friendship ||
+    controls.affection ||
+    controls.heldItem ||
+    controls.location ||
+    controls.timeOfDay ||
+    controls.trading ||
+    controls.rain ||
+    controls.upsideDown
+  );
+}
+
+const EMPTY_CONTROLS: VisibleControls = {
+  level: false,
+  friendship: false,
+  affection: false,
+  heldItem: false,
+  location: false,
+  timeOfDay: false,
+  trading: false,
+  rain: false,
+  upsideDown: false,
+};
+
+/**
  * Computes which controls should be visible based on the evolution chain's
  * details. Scans all evolution details across the entire chain.
  */
 function computeVisibleControls(
   details: readonly {
-    readonly evolution_details: readonly {
-      readonly min_level: number | null;
-      readonly min_happiness: number | null;
-      readonly min_affection: number | null;
-      readonly item: { readonly name: string } | null;
-      readonly held_item: { readonly name: string } | null;
-      readonly location: { readonly name: string } | null;
-      readonly time_of_day: string;
-      readonly trigger: { readonly name: string };
-      readonly needs_overworld_rain: boolean;
-      readonly turn_upside_down: boolean;
-    }[];
+    readonly evolution_details: readonly EvolutionDetail[];
   }[]
 ): VisibleControls {
-  let level = false;
-  let friendship = false;
-  let affection = false;
-  let heldItem = false;
-  let location = false;
-  let timeOfDay = false;
-  let trading = false;
-  let rain = false;
-  let upsideDown = false;
+  let result = EMPTY_CONTROLS;
 
   for (const link of details) {
     for (const detail of link.evolution_details) {
-      if (detail.min_level !== null) level = true;
-      if (detail.min_happiness !== null) friendship = true;
-      if (detail.min_affection !== null) affection = true;
-      if (detail.item !== null || detail.held_item !== null) heldItem = true;
-      if (detail.location !== null) location = true;
-      if (detail.time_of_day !== "") timeOfDay = true;
-      if (detail.trigger.name === "trade") trading = true;
-      if (detail.needs_overworld_rain) rain = true;
-      if (detail.turn_upside_down) upsideDown = true;
+      result = mergeControls(result, scanDetail(detail));
     }
   }
 
   // Always show level as a sensible default if nothing else is visible
-  if (
-    !level &&
-    !friendship &&
-    !affection &&
-    !heldItem &&
-    !location &&
-    !timeOfDay &&
-    !trading &&
-    !rain &&
-    !upsideDown
-  ) {
-    level = true;
+  if (!hasAnyVisible(result)) {
+    return { ...result, level: true };
   }
 
-  return { level, friendship, affection, heldItem, location, timeOfDay, trading, rain, upsideDown };
+  return result;
 }
 
 export { EvolutionControls, computeVisibleControls };

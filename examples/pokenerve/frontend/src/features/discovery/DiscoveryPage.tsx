@@ -63,6 +63,37 @@ function toSummary(name: string, url: string): PokemonSummary {
 }
 
 // ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function getErrorMessage(error: { _tag: string; message?: string }): string {
+  switch (error._tag) {
+    case "NetworkError":
+      return `Network error: ${error.message ?? "Unknown"}`;
+    case "NotFoundError":
+      return "Not found";
+    case "RateLimitError":
+      return "Rate limited. Please wait.";
+    case "ParseError":
+      return "Parse error";
+    default:
+      return "An unexpected error occurred";
+  }
+}
+
+function QueryErrorBanner({
+  error,
+}: {
+  readonly error: { _tag: string; message?: string };
+}): ReactNode {
+  return (
+    <div className="rounded-lg border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+      {getErrorMessage(error)}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -158,17 +189,8 @@ function DiscoveryPage(): ReactNode {
       </div>
 
       {/* Error banner */}
-      {queryState.isError && queryState.error !== null && (
-        <div className="rounded-lg border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
-          {"_tag" in queryState.error &&
-            queryState.error._tag === "NetworkError" &&
-            `Network error: ${(queryState.error as { message: string }).message}`}
-          {"_tag" in queryState.error && queryState.error._tag === "NotFoundError" && `Not found`}
-          {"_tag" in queryState.error &&
-            queryState.error._tag === "RateLimitError" &&
-            `Rate limited. Please wait.`}
-          {"_tag" in queryState.error && queryState.error._tag === "ParseError" && `Parse error`}
-        </div>
+      {queryState.isError && queryState.error !== null && "_tag" in queryState.error && (
+        <QueryErrorBanner error={queryState.error} />
       )}
 
       {/* Pokemon grid */}

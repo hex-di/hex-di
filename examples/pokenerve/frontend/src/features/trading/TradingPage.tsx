@@ -13,8 +13,7 @@
 
 import { type ReactNode, useState, useCallback, useMemo } from "react";
 import { useSaga } from "@hex-di/saga-react";
-import type { SagaSuccess, SagaError } from "@hex-di/saga";
-import type { TradingError } from "@pokenerve/shared/types/trading";
+import type { SagaSuccess } from "@hex-di/saga";
 import type { Pokemon } from "@pokenerve/shared/types/pokemon";
 import { TradeSagaPort } from "../../ports/saga/trade-saga-port.js";
 import type { TradeOutput } from "../../sagas/trade-saga.js";
@@ -22,6 +21,7 @@ import { setChaosEnabled, setChaosFailureProbability } from "../../adapters/trad
 import gen1Data from "../../data/gen1-pokemon.json";
 import { PokemonSelector } from "./PokemonSelector.js";
 import { ChaosControls } from "./ChaosControls.js";
+import { SagaTimeline, CompensationBanner } from "./SagaVisualization.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,227 +64,128 @@ function formatName(name: string): string {
     .join(" ");
 }
 
-const SAGA_STEP_LABELS: Record<string, string> = {
-  ValidateTrade: "Validate Trade",
-  ReservePokemon: "Reserve Pokemon",
-  ExecuteSwap: "Execute Swap",
-  ConfirmTrade: "Confirm Trade",
-};
-
-function getStepLabel(name: string): string {
-  return SAGA_STEP_LABELS[name] ?? name;
-}
-
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function SagaTimeline({
-  status,
-  currentStep,
-  result,
-  error,
+function TradeSetupPanel({
+  offeredPokemonId,
+  requestedPokemonId,
+  canStartTrade,
+  chaosMode,
+  failureProbability,
+  onSelectOffered,
+  onSelectRequested,
+  onStartTrade,
+  onChaosModeChange,
+  onFailureProbabilityChange,
 }: {
-  readonly status: string;
-  readonly currentStep: string | undefined;
-  readonly result: SagaSuccess<TradeOutput> | undefined;
-  readonly error: SagaError<TradingError> | null;
+  readonly offeredPokemonId: number | null;
+  readonly requestedPokemonId: number | null;
+  readonly canStartTrade: boolean;
+  readonly chaosMode: boolean;
+  readonly failureProbability: number;
+  readonly onSelectOffered: (id: number | null) => void;
+  readonly onSelectRequested: (id: number | null) => void;
+  readonly onStartTrade: () => void;
+  readonly onChaosModeChange: (enabled: boolean) => void;
+  readonly onFailureProbabilityChange: (probability: number) => void;
 }): ReactNode {
-  const stepNames = ["ValidateTrade", "ReservePokemon", "ExecuteSwap", "ConfirmTrade"];
-
   return (
-    <div className="flex flex-col gap-1">
-      <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-          Saga Progress
-        </h3>
-        {status === "compensating" && (
-          <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
-            Compensating
-          </span>
-        )}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Pokemon selection */}
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-white">Select Pokemon to Trade</h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <PokemonSelector
+              label="You Offer"
+              selectedId={offeredPokemonId}
+              onSelect={onSelectOffered}
+              disabledId={requestedPokemonId}
+            />
+            <PokemonSelector
+              label="You Request"
+              selectedId={requestedPokemonId}
+              onSelect={onSelectRequested}
+              disabledId={offeredPokemonId}
+            />
+          </div>
+
+          {/* Trade arrow */}
+          {offeredPokemonId !== null && requestedPokemonId !== null && (
+            <TradeArrow
+              offeredPokemonId={offeredPokemonId}
+              requestedPokemonId={requestedPokemonId}
+            />
+          )}
+
+          {/* Start button */}
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              disabled={!canStartTrade}
+              onClick={onStartTrade}
+              className={`rounded-xl px-8 py-3 text-sm font-bold transition-all ${
+                canStartTrade
+                  ? "bg-amber-500 text-gray-900 shadow-lg shadow-amber-500/20 hover:bg-amber-400"
+                  : "cursor-not-allowed bg-gray-700 text-gray-500"
+              }`}
+            >
+              Start Trade
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="relative flex flex-col">
-        {stepNames.map((stepName, index) => {
-          const isLast = index === stepNames.length - 1;
-          let stepStatus: "pending" | "executing" | "completed" | "failed" = "pending";
-          let duration = "";
-
-          if (result !== undefined) {
-            // Saga completed successfully - all steps completed
-            stepStatus = "completed";
-          } else if (error !== null) {
-            // Saga failed
-            if (error._tag === "StepFailed" && error.stepName === stepName) {
-              stepStatus = "failed";
-            } else if (result === undefined && error._tag === "StepFailed") {
-              // Steps before the failed step are completed
-              const failedIdx = stepNames.indexOf(error.stepName ?? "");
-              if (index < failedIdx) {
-                stepStatus = "completed";
-              } else if (index > failedIdx) {
-                stepStatus = "pending";
-              }
-            }
-          } else if (status === "running") {
-            if (currentStep === stepName) {
-              stepStatus = "executing";
-            } else if (currentStep !== undefined) {
-              const currentIdx = stepNames.indexOf(currentStep);
-              if (index < currentIdx) {
-                stepStatus = "completed";
-              }
-            }
-          }
-
-          const dotColor =
-            stepStatus === "completed"
-              ? "bg-emerald-500"
-              : stepStatus === "executing"
-                ? "bg-yellow-500"
-                : stepStatus === "failed"
-                  ? "bg-red-500"
-                  : "bg-gray-600";
-
-          const textColor =
-            stepStatus === "completed"
-              ? "text-emerald-400"
-              : stepStatus === "executing"
-                ? "text-yellow-400"
-                : stepStatus === "failed"
-                  ? "text-red-400"
-                  : "text-gray-500";
-
-          const lineColor =
-            stepStatus === "completed"
-              ? "bg-emerald-500/50"
-              : stepStatus === "executing"
-                ? "bg-yellow-500/50"
-                : stepStatus === "failed"
-                  ? "bg-red-500/50"
-                  : "bg-gray-700";
-
-          const statusLabel =
-            stepStatus === "completed"
-              ? "Completed"
-              : stepStatus === "executing"
-                ? "Executing..."
-                : stepStatus === "failed"
-                  ? "Failed"
-                  : "Pending";
-
-          return (
-            <div key={stepName} className="relative flex items-start gap-4 pb-6">
-              {!isLast && (
-                <div className={`absolute left-[11px] top-6 h-full w-0.5 ${lineColor}`} />
-              )}
-              <div className="relative z-10 flex-shrink-0">
-                <div
-                  className={`h-6 w-6 rounded-full border-2 border-gray-900 ${dotColor} ${
-                    stepStatus === "executing" ? "animate-pulse" : ""
-                  }`}
-                >
-                  {stepStatus === "completed" && (
-                    <svg
-                      className="h-full w-full p-0.5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                  {stepStatus === "failed" && (
-                    <svg
-                      className="h-full w-full p-0.5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <div className="flex flex-1 flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white">{getStepLabel(stepName)}</span>
-                  <span className={`text-xs font-medium ${textColor}`}>{statusLabel}</span>
-                  {duration !== "" && <span className="text-xs text-gray-600">{duration}</span>}
-                </div>
-                {stepStatus === "failed" && error !== null && "_tag" in error && (
-                  <span className="text-xs text-red-400/80">
-                    {error._tag === "StepFailed" && error.cause !== undefined
-                      ? `Step failed: ${String(error.cause)}`
-                      : error._tag}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* Chaos controls (setup phase) */}
+      <div>
+        <ChaosControls
+          chaosMode={chaosMode}
+          failureProbability={failureProbability}
+          currentStep={null}
+          onChaosModeChange={onChaosModeChange}
+          onFailureProbabilityChange={onFailureProbabilityChange}
+          disabled={false}
+        />
       </div>
     </div>
   );
 }
 
-function CompensationBanner({ error }: { readonly error: SagaError<TradingError> }): ReactNode {
-  const compensatedSteps = error._tag === "StepFailed" ? error.compensatedSteps : [];
-
+function TradeArrow({
+  offeredPokemonId,
+  requestedPokemonId,
+}: {
+  readonly offeredPokemonId: number;
+  readonly requestedPokemonId: number;
+}): ReactNode {
   return (
-    <div className="rounded-xl border border-orange-800/50 bg-orange-950/20 p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <svg
-          className="h-5 w-5 text-orange-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-400">
-          Compensation (Unwinding)
-        </h3>
-      </div>
-      <p className="mb-4 text-xs text-orange-300/60">
-        A step failed. The saga compensated by undoing completed operations in reverse order to
-        restore the system to a consistent state.
-      </p>
-      {compensatedSteps.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {compensatedSteps.map(stepName => (
-            <div
-              key={stepName}
-              className="flex items-center gap-3 rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3"
-            >
-              <svg
-                className="h-5 w-5 text-orange-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-orange-300">
-                {getStepLabel(stepName)} - Compensated
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="mt-6 flex items-center justify-center gap-4">
+      <span className="text-sm text-gray-500">
+        {formatName(findEntryById(offeredPokemonId)?.name ?? "?")}
+      </span>
+      <svg
+        className="h-5 w-8 text-amber-400"
+        fill="none"
+        viewBox="0 0 32 20"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path d="M2 10h28M22 4l8 6-8 6" />
+      </svg>
+      <svg
+        className="h-5 w-8 text-amber-400"
+        fill="none"
+        viewBox="0 0 32 20"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path d="M30 10H2M10 4l-8 6 8 6" />
+      </svg>
+      <span className="text-sm text-gray-500">
+        {formatName(findEntryById(requestedPokemonId)?.name ?? "?")}
+      </span>
     </div>
   );
 }
@@ -378,88 +279,20 @@ function TradingPage(): ReactNode {
       </div>
 
       {isSetup && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Pokemon selection */}
-          <div className="flex flex-col gap-6 lg:col-span-2">
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-              <h2 className="mb-4 text-lg font-semibold text-white">Select Pokemon to Trade</h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <PokemonSelector
-                  label="You Offer"
-                  selectedId={offeredPokemonId}
-                  onSelect={setOfferedPokemonId}
-                  disabledId={requestedPokemonId}
-                />
-                <PokemonSelector
-                  label="You Request"
-                  selectedId={requestedPokemonId}
-                  onSelect={setRequestedPokemonId}
-                  disabledId={offeredPokemonId}
-                />
-              </div>
-
-              {/* Trade arrow */}
-              {offeredPokemonId !== null && requestedPokemonId !== null && (
-                <div className="mt-6 flex items-center justify-center gap-4">
-                  <span className="text-sm text-gray-500">
-                    {formatName(findEntryById(offeredPokemonId)?.name ?? "?")}
-                  </span>
-                  <svg
-                    className="h-5 w-8 text-amber-400"
-                    fill="none"
-                    viewBox="0 0 32 20"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M2 10h28M22 4l8 6-8 6" />
-                  </svg>
-                  <svg
-                    className="h-5 w-8 text-amber-400"
-                    fill="none"
-                    viewBox="0 0 32 20"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M30 10H2M10 4l-8 6 8 6" />
-                  </svg>
-                  <span className="text-sm text-gray-500">
-                    {formatName(findEntryById(requestedPokemonId)?.name ?? "?")}
-                  </span>
-                </div>
-              )}
-
-              {/* Start button */}
-              <div className="mt-6 flex justify-center">
-                <button
-                  type="button"
-                  disabled={!canStartTrade}
-                  onClick={() => {
-                    void handleStartTrade();
-                  }}
-                  className={`rounded-xl px-8 py-3 text-sm font-bold transition-all ${
-                    canStartTrade
-                      ? "bg-amber-500 text-gray-900 shadow-lg shadow-amber-500/20 hover:bg-amber-400"
-                      : "cursor-not-allowed bg-gray-700 text-gray-500"
-                  }`}
-                >
-                  Start Trade
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Chaos controls (setup phase) */}
-          <div>
-            <ChaosControls
-              chaosMode={chaosMode}
-              failureProbability={failureProbability}
-              currentStep={null}
-              onChaosModeChange={handleChaosModeChange}
-              onFailureProbabilityChange={handleFailureProbabilityChange}
-              disabled={false}
-            />
-          </div>
-        </div>
+        <TradeSetupPanel
+          offeredPokemonId={offeredPokemonId}
+          requestedPokemonId={requestedPokemonId}
+          canStartTrade={canStartTrade}
+          chaosMode={chaosMode}
+          failureProbability={failureProbability}
+          onSelectOffered={setOfferedPokemonId}
+          onSelectRequested={setRequestedPokemonId}
+          onStartTrade={() => {
+            void handleStartTrade();
+          }}
+          onChaosModeChange={handleChaosModeChange}
+          onFailureProbabilityChange={handleFailureProbabilityChange}
+        />
       )}
 
       {(isExecuting || isDone) && (

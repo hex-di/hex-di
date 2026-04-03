@@ -46,18 +46,18 @@ type GuardKeyboardAction =
   | { readonly type: "zoom-out" }
   | { readonly type: "fit-to-view" };
 
-const GUARD_KEY_ACTION_MAP: Record<string, GuardKeyboardAction["type"]> = {
-  Enter: "activate",
-  Escape: "escape",
-  "?": "toggle-educational",
-  "/": "open-search",
-  f: "open-filter",
-  ArrowUp: "navigate-up",
-  ArrowDown: "navigate-down",
-  ArrowLeft: "navigate-left",
-  ArrowRight: "navigate-right",
-  "+": "zoom-in",
-  "-": "zoom-out",
+const GUARD_KEY_ACTION_MAP: Record<string, GuardKeyboardAction> = {
+  Enter: { type: "activate" },
+  Escape: { type: "escape" },
+  "?": { type: "toggle-educational" },
+  "/": { type: "open-search" },
+  f: { type: "open-filter" },
+  ArrowUp: { type: "navigate-up" },
+  ArrowDown: { type: "navigate-down" },
+  ArrowLeft: { type: "navigate-left" },
+  ArrowRight: { type: "navigate-right" },
+  "+": { type: "zoom-in" },
+  "-": { type: "zoom-out" },
 };
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -86,9 +86,9 @@ function GuardKeyboardNav({
         return;
       }
 
-      const actionType = GUARD_KEY_ACTION_MAP[key];
-      if (actionType !== undefined) {
-        onAction({ type: actionType });
+      const action = GUARD_KEY_ACTION_MAP[key];
+      if (action !== undefined) {
+        onAction(action);
       }
     },
     [onAction]

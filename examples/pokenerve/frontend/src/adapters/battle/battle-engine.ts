@@ -1,14 +1,4 @@
-/**
- * Battle engine adapter.
- *
- * Implements the BattleEnginePort with core battle logic: creating battles,
- * executing moves, switching Pokemon, checking for fainted Pokemon,
- * and ending turns. Delegates damage calculation to DamageCalcPort
- * and AI move selection to AiStrategyPort.
- *
- * @packageDocumentation
- */
-
+/** @packageDocumentation */
 import { createAdapter } from "@hex-di/core";
 import { ok, err } from "@hex-di/result";
 import type { Result } from "@hex-di/result";
@@ -20,6 +10,7 @@ import type {
 } from "@pokenerve/shared/types/battle";
 import { InvalidMove, NoPpRemaining } from "@pokenerve/shared/types/battle";
 import { BattleEnginePort, DamageCalcPort, AiStrategyPort } from "../../ports/battle.js";
+import type { DamageCalcService, AiStrategyService } from "../../ports/battle.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,6 +41,110 @@ function effectivenessLabel(modifier: number): string {
   if (modifier < 1) return "It's not very effective...";
   if (modifier > 1) return "It's super effective!";
   return "";
+}
+
+function appendDamageLogs(
+  log: BattleLogEntry[],
+  dmg: { finalDamage: number; typeModifier: number; criticalHit: boolean },
+  ctx: { turn: number; attackerName: string; defenderName: string; moveName: string }
+): void {
+  log.push(createLogEntry(ctx.turn, `${ctx.attackerName} used ${ctx.moveName}!`, "move"));
+  const effLabel = effectivenessLabel(dmg.typeModifier);
+  if (effLabel) log.push(createLogEntry(ctx.turn, effLabel, "damage"));
+  if (dmg.criticalHit) log.push(createLogEntry(ctx.turn, "A critical hit!", "damage"));
+  log.push(
+    createLogEntry(ctx.turn, `${ctx.defenderName} took ${dmg.finalDamage} damage!`, "damage")
+  );
+}
+
+function applyStatusDamage(
+  team: readonly BattlePokemon[],
+  activeIndex: number,
+  statusName: string,
+  divisor: number,
+  logMsg: string,
+  turn: number,
+  log: BattleLogEntry[]
+): readonly BattlePokemon[] {
+  const pokemon = team[activeIndex];
+  if (!pokemon || pokemon.status !== statusName) return team;
+  const damage = Math.max(1, Math.floor(pokemon.maxHp / divisor));
+  const newHp = Math.max(0, pokemon.currentHp - damage);
+  log.push(createLogEntry(turn, `${pokemon.pokemon.name} ${logMsg}`, "status"));
+  return replaceTeamMember(team, activeIndex, p => ({ ...p, currentHp: newHp }));
+}
+
+interface AiAttackResult {
+  readonly opponentTeam: readonly BattlePokemon[];
+  readonly playerTeam: readonly BattlePokemon[];
+}
+
+function executeAiAttack(
+  state: BattleState,
+  updatedOpponentTeam: readonly BattlePokemon[],
+  updatedPlayerTeam: readonly BattlePokemon[],
+  newLog: BattleLogEntry[],
+  aiStrategy: AiStrategyService,
+  damageCalc: DamageCalcService
+): AiAttackResult {
+  const currentOpponent = updatedOpponentTeam[state.activeOpponentIndex];
+  if (!currentOpponent || currentOpponent.currentHp <= 0) {
+    return { opponentTeam: updatedOpponentTeam, playerTeam: updatedPlayerTeam };
+  }
+  const currentPlayer = updatedPlayerTeam[state.activePlayerIndex];
+  if (!currentPlayer || currentPlayer.currentHp <= 0) {
+    return { opponentTeam: updatedOpponentTeam, playerTeam: updatedPlayerTeam };
+  }
+  const aiAction = aiStrategy.selectAction({
+    ownTeam: updatedOpponentTeam,
+    opponentTeam: updatedPlayerTeam,
+    activeOwn: currentOpponent,
+    activeOpponent: currentPlayer,
+    weather: state.weather,
+    terrain: state.terrain,
+    turn: state.turn,
+  });
+  if (aiAction._tag !== "UseMove") {
+    return { opponentTeam: updatedOpponentTeam, playerTeam: updatedPlayerTeam };
+  }
+  const aiMove = currentOpponent.moves[aiAction.moveIndex];
+  if (!aiMove || aiMove.currentPp <= 0) {
+    return { opponentTeam: updatedOpponentTeam, playerTeam: updatedPlayerTeam };
+  }
+  const aiDamageResult = damageCalc.calculate({
+    attacker: currentOpponent,
+    defender: currentPlayer,
+    move: aiMove.move,
+    weather: state.weather,
+    terrain: state.terrain,
+    isCritical: Math.random() < 0.0625,
+  });
+  // Deduct AI PP
+  const nextOpponentTeam = replaceTeamMember(updatedOpponentTeam, state.activeOpponentIndex, p => ({
+    ...p,
+    moves: p.moves.map((m, i) =>
+      i === aiAction.moveIndex ? { ...m, currentPp: Math.max(0, m.currentPp - 1) } : m
+    ),
+  }));
+  let nextPlayerTeam = updatedPlayerTeam;
+  if (aiDamageResult.isOk()) {
+    const aiDmg = aiDamageResult.value;
+    const newPlayerHp = Math.max(0, currentPlayer.currentHp - aiDmg.finalDamage);
+    appendDamageLogs(newLog, aiDmg, {
+      turn: state.turn,
+      attackerName: currentOpponent.pokemon.name,
+      defenderName: currentPlayer.pokemon.name,
+      moveName: aiMove.move.name,
+    });
+    nextPlayerTeam = replaceTeamMember(nextPlayerTeam, state.activePlayerIndex, p => ({
+      ...p,
+      currentHp: newPlayerHp,
+    }));
+    if (newPlayerHp <= 0) {
+      newLog.push(createLogEntry(state.turn, `${currentPlayer.pokemon.name} fainted!`, "faint"));
+    }
+  }
+  return { opponentTeam: nextOpponentTeam, playerTeam: nextPlayerTeam };
 }
 
 // ---------------------------------------------------------------------------
@@ -122,141 +217,46 @@ const battleEngineAdapter = createAdapter({
           ),
         }));
 
-        if (playerDamageResult.isOk()) {
-          const dmg = playerDamageResult.value;
-          const newHp = Math.max(0, opponentPokemon.currentHp - dmg.finalDamage);
-
-          newLog.push(
-            createLogEntry(
-              state.turn,
-              `${playerPokemon.pokemon.name} used ${selectedMove.move.name}!`,
-              "move"
-            )
-          );
-
-          const effLabel = effectivenessLabel(dmg.typeModifier);
-          if (effLabel) {
-            newLog.push(createLogEntry(state.turn, effLabel, "damage"));
-          }
-
-          if (dmg.criticalHit) {
-            newLog.push(createLogEntry(state.turn, "A critical hit!", "damage"));
-          }
-
-          newLog.push(
-            createLogEntry(
-              state.turn,
-              `${opponentPokemon.pokemon.name} took ${dmg.finalDamage} damage!`,
-              "damage"
-            )
-          );
-
-          updatedOpponentTeam = replaceTeamMember(
-            updatedOpponentTeam,
-            state.activeOpponentIndex,
-            p => ({ ...p, currentHp: newHp })
-          );
-
-          if (newHp <= 0) {
-            newLog.push(
-              createLogEntry(state.turn, `${opponentPokemon.pokemon.name} fainted!`, "faint")
-            );
-          }
-        } else {
+        if (!playerDamageResult.isOk()) {
           return err(playerDamageResult.error);
         }
 
-        // --- Opponent AI attacks (if still alive) ---
-        const currentOpponent = updatedOpponentTeam[state.activeOpponentIndex];
-        if (currentOpponent && currentOpponent.currentHp > 0) {
-          const currentPlayer = updatedPlayerTeam[state.activePlayerIndex];
-          if (currentPlayer && currentPlayer.currentHp > 0) {
-            const aiAction = aiStrategy.selectAction({
-              ownTeam: updatedOpponentTeam,
-              opponentTeam: updatedPlayerTeam,
-              activeOwn: currentOpponent,
-              activeOpponent: currentPlayer,
-              weather: state.weather,
-              terrain: state.terrain,
-              turn: state.turn,
-            });
+        const dmg = playerDamageResult.value;
+        const newHp = Math.max(0, opponentPokemon.currentHp - dmg.finalDamage);
 
-            if (aiAction._tag === "UseMove") {
-              const aiMove = currentOpponent.moves[aiAction.moveIndex];
-              if (aiMove && aiMove.currentPp > 0) {
-                const aiDamageResult = damageCalc.calculate({
-                  attacker: currentOpponent,
-                  defender: currentPlayer,
-                  move: aiMove.move,
-                  weather: state.weather,
-                  terrain: state.terrain,
-                  isCritical: Math.random() < 0.0625,
-                });
+        appendDamageLogs(newLog, dmg, {
+          turn: state.turn,
+          attackerName: playerPokemon.pokemon.name,
+          defenderName: opponentPokemon.pokemon.name,
+          moveName: selectedMove.move.name,
+        });
 
-                // Deduct AI PP
-                updatedOpponentTeam = replaceTeamMember(
-                  updatedOpponentTeam,
-                  state.activeOpponentIndex,
-                  p => ({
-                    ...p,
-                    moves: p.moves.map((m, i) =>
-                      i === aiAction.moveIndex
-                        ? { ...m, currentPp: Math.max(0, m.currentPp - 1) }
-                        : m
-                    ),
-                  })
-                );
+        updatedOpponentTeam = replaceTeamMember(
+          updatedOpponentTeam,
+          state.activeOpponentIndex,
+          p => ({ ...p, currentHp: newHp })
+        );
 
-                if (aiDamageResult.isOk()) {
-                  const aiDmg = aiDamageResult.value;
-                  const newPlayerHp = Math.max(0, currentPlayer.currentHp - aiDmg.finalDamage);
-
-                  newLog.push(
-                    createLogEntry(
-                      state.turn,
-                      `${currentOpponent.pokemon.name} used ${aiMove.move.name}!`,
-                      "move"
-                    )
-                  );
-
-                  const aiEffLabel = effectivenessLabel(aiDmg.typeModifier);
-                  if (aiEffLabel) {
-                    newLog.push(createLogEntry(state.turn, aiEffLabel, "damage"));
-                  }
-
-                  if (aiDmg.criticalHit) {
-                    newLog.push(createLogEntry(state.turn, "A critical hit!", "damage"));
-                  }
-
-                  newLog.push(
-                    createLogEntry(
-                      state.turn,
-                      `${currentPlayer.pokemon.name} took ${aiDmg.finalDamage} damage!`,
-                      "damage"
-                    )
-                  );
-
-                  updatedPlayerTeam = replaceTeamMember(
-                    updatedPlayerTeam,
-                    state.activePlayerIndex,
-                    p => ({ ...p, currentHp: newPlayerHp })
-                  );
-
-                  if (newPlayerHp <= 0) {
-                    newLog.push(
-                      createLogEntry(state.turn, `${currentPlayer.pokemon.name} fainted!`, "faint")
-                    );
-                  }
-                }
-              }
-            }
-          }
+        if (newHp <= 0) {
+          newLog.push(
+            createLogEntry(state.turn, `${opponentPokemon.pokemon.name} fainted!`, "faint")
+          );
         }
+
+        // --- Opponent AI attacks (if still alive) ---
+        const aiResult = executeAiAttack(
+          state,
+          updatedOpponentTeam,
+          updatedPlayerTeam,
+          newLog,
+          aiStrategy,
+          damageCalc
+        );
 
         return ok({
           ...state,
-          playerTeam: updatedPlayerTeam,
-          opponentTeam: updatedOpponentTeam,
+          playerTeam: aiResult.playerTeam,
+          opponentTeam: aiResult.opponentTeam,
           log: newLog,
         });
       },
@@ -351,90 +351,32 @@ const battleEngineAdapter = createAdapter({
 
       endTurn(state: BattleState): BattleState {
         const newLog = [...state.log];
+        const pi = state.activePlayerIndex;
+        const oi = state.activeOpponentIndex;
+        const t = state.turn;
 
-        // Handle burn damage for player
-        const playerActive = state.playerTeam[state.activePlayerIndex];
-        let updatedPlayerTeam = state.playerTeam;
-        if (playerActive && playerActive.status === "burn") {
-          const burnDamage = Math.max(1, Math.floor(playerActive.maxHp / 16));
-          const newHp = Math.max(0, playerActive.currentHp - burnDamage);
-          updatedPlayerTeam = replaceTeamMember(updatedPlayerTeam, state.activePlayerIndex, p => ({
-            ...p,
-            currentHp: newHp,
-          }));
-          newLog.push(
-            createLogEntry(
-              state.turn,
-              `${playerActive.pokemon.name} is hurt by its burn!`,
-              "status"
-            )
-          );
-        }
+        let pTeam = applyStatusDamage(
+          state.playerTeam,
+          pi,
+          "burn",
+          16,
+          "is hurt by its burn!",
+          t,
+          newLog
+        );
+        let oTeam = applyStatusDamage(
+          state.opponentTeam,
+          oi,
+          "burn",
+          16,
+          "is hurt by its burn!",
+          t,
+          newLog
+        );
+        pTeam = applyStatusDamage(pTeam, pi, "poison", 8, "is hurt by poison!", t, newLog);
+        oTeam = applyStatusDamage(oTeam, oi, "poison", 8, "is hurt by poison!", t, newLog);
 
-        // Handle burn damage for opponent
-        const opponentActive = state.opponentTeam[state.activeOpponentIndex];
-        let updatedOpponentTeam = state.opponentTeam;
-        if (opponentActive && opponentActive.status === "burn") {
-          const burnDamage = Math.max(1, Math.floor(opponentActive.maxHp / 16));
-          const newHp = Math.max(0, opponentActive.currentHp - burnDamage);
-          updatedOpponentTeam = replaceTeamMember(
-            updatedOpponentTeam,
-            state.activeOpponentIndex,
-            p => ({ ...p, currentHp: newHp })
-          );
-          newLog.push(
-            createLogEntry(
-              state.turn,
-              `${opponentActive.pokemon.name} is hurt by its burn!`,
-              "status"
-            )
-          );
-        }
-
-        // Handle poison damage for player
-        const playerAfterBurn = updatedPlayerTeam[state.activePlayerIndex];
-        if (playerAfterBurn && playerAfterBurn.status === "poison") {
-          const poisonDamage = Math.max(1, Math.floor(playerAfterBurn.maxHp / 8));
-          const newHp = Math.max(0, playerAfterBurn.currentHp - poisonDamage);
-          updatedPlayerTeam = replaceTeamMember(updatedPlayerTeam, state.activePlayerIndex, p => ({
-            ...p,
-            currentHp: newHp,
-          }));
-          newLog.push(
-            createLogEntry(
-              state.turn,
-              `${playerAfterBurn.pokemon.name} is hurt by poison!`,
-              "status"
-            )
-          );
-        }
-
-        // Handle poison damage for opponent
-        const opponentAfterBurn = updatedOpponentTeam[state.activeOpponentIndex];
-        if (opponentAfterBurn && opponentAfterBurn.status === "poison") {
-          const poisonDamage = Math.max(1, Math.floor(opponentAfterBurn.maxHp / 8));
-          const newHp = Math.max(0, opponentAfterBurn.currentHp - poisonDamage);
-          updatedOpponentTeam = replaceTeamMember(
-            updatedOpponentTeam,
-            state.activeOpponentIndex,
-            p => ({ ...p, currentHp: newHp })
-          );
-          newLog.push(
-            createLogEntry(
-              state.turn,
-              `${opponentAfterBurn.pokemon.name} is hurt by poison!`,
-              "status"
-            )
-          );
-        }
-
-        return {
-          ...state,
-          turn: state.turn + 1,
-          playerTeam: updatedPlayerTeam,
-          opponentTeam: updatedOpponentTeam,
-          log: newLog,
-        };
+        return { ...state, turn: t + 1, playerTeam: pTeam, opponentTeam: oTeam, log: newLog };
       },
     };
   },

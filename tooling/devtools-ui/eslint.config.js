@@ -2,23 +2,26 @@
 import tseslint from "typescript-eslint";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
-import { baseConfig, testConfig } from "../../eslint.config.js";
+import {
+  sharedConfig,
+  prodConfig,
+  examplesConfig,
+  testConfig,
+  parserConfig,
+} from "../../eslint.config.js";
 
 export default tseslint.config(
   {
-    ignores: ["node_modules/**", "dist/**", "*.config.js", "*.config.ts"],
+    ignores: ["node_modules/**", "dist/**", "coverage/**", "*.config.js", "*.config.ts"],
   },
-  ...baseConfig,
+  ...sharedConfig,
+  ...prodConfig,
+  ...examplesConfig,
+  parserConfig(import.meta.dirname),
   {
     plugins: {
       react,
       "react-hooks": reactHooks,
-    },
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
     rules: {
       ...react.configs.recommended.rules,

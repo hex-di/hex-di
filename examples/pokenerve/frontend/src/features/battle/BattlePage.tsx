@@ -27,6 +27,76 @@ import { BattleLog } from "./BattleLog.js";
 type Phase = "team_select" | "battle";
 
 // ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function BattleStatusLabel({ status }: { readonly status: BattleState["status"] }): ReactNode {
+  switch (status) {
+    case "player_win":
+      return "Victory!";
+    case "opponent_win":
+      return "Defeat!";
+    case "draw":
+      return "Draw!";
+    default:
+      return null;
+  }
+}
+
+function BattleOverMessage({ status }: { readonly status: BattleState["status"] }): ReactNode {
+  switch (status) {
+    case "player_win":
+      return "Congratulations, you won!";
+    case "opponent_win":
+      return "Better luck next time...";
+    case "draw":
+      return "It's a draw!";
+    default:
+      return null;
+  }
+}
+
+function SwitchButton({
+  pokemon,
+  isCurrent,
+  onSwitch,
+}: {
+  readonly pokemon: BattlePokemon;
+  readonly isCurrent: boolean;
+  readonly onSwitch: () => void;
+}): ReactNode {
+  const isFainted = pokemon.currentHp <= 0;
+  const canSwitch = !isCurrent && !isFainted;
+
+  const className = isCurrent
+    ? "border-red-600 bg-red-900/30 text-red-300"
+    : isFainted
+      ? "cursor-not-allowed border-gray-800 bg-gray-800/30 text-gray-600 opacity-50"
+      : "border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-500";
+
+  return (
+    <button
+      key={pokemon.pokemon.id}
+      type="button"
+      onClick={onSwitch}
+      disabled={!canSwitch}
+      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${className}`}
+    >
+      <img
+        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${String(pokemon.pokemon.id)}.png`}
+        alt={pokemon.pokemon.name}
+        className={`h-8 w-8 ${isFainted ? "grayscale" : ""}`}
+        loading="lazy"
+      />
+      <span className="capitalize">{pokemon.pokemon.name}</span>
+      <span className="text-xs text-gray-500">
+        {pokemon.currentHp}/{pokemon.maxHp}
+      </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -163,9 +233,7 @@ function BattlePage(): ReactNode {
             Turn {battleState.turn}
             {battleOver && (
               <span className="ml-2 font-semibold text-yellow-400">
-                {battleState.status === "player_win" && "Victory!"}
-                {battleState.status === "opponent_win" && "Defeat!"}
-                {battleState.status === "draw" && "Draw!"}
+                <BattleStatusLabel status={battleState.status} />
               </span>
             )}
           </p>
@@ -213,38 +281,14 @@ function BattlePage(): ReactNode {
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
               <h3 className="mb-2 text-sm font-semibold text-gray-400">Switch Pokemon</h3>
               <div className="flex flex-wrap gap-2">
-                {battleState.playerTeam.map((pokemon, index) => {
-                  const isCurrent = index === battleState.activePlayerIndex;
-                  const isFainted = pokemon.currentHp <= 0;
-                  const canSwitch = !isCurrent && !isFainted;
-
-                  return (
-                    <button
-                      key={pokemon.pokemon.id}
-                      type="button"
-                      onClick={() => handleSwitchPokemon(index)}
-                      disabled={!canSwitch}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
-                        isCurrent
-                          ? "border-red-600 bg-red-900/30 text-red-300"
-                          : isFainted
-                            ? "cursor-not-allowed border-gray-800 bg-gray-800/30 text-gray-600 opacity-50"
-                            : "border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-500"
-                      }`}
-                    >
-                      <img
-                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${String(pokemon.pokemon.id)}.png`}
-                        alt={pokemon.pokemon.name}
-                        className={`h-8 w-8 ${isFainted ? "grayscale" : ""}`}
-                        loading="lazy"
-                      />
-                      <span className="capitalize">{pokemon.pokemon.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {pokemon.currentHp}/{pokemon.maxHp}
-                      </span>
-                    </button>
-                  );
-                })}
+                {battleState.playerTeam.map((pokemon, index) => (
+                  <SwitchButton
+                    key={pokemon.pokemon.id}
+                    pokemon={pokemon}
+                    isCurrent={index === battleState.activePlayerIndex}
+                    onSwitch={() => handleSwitchPokemon(index)}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -253,9 +297,7 @@ function BattlePage(): ReactNode {
           {battleOver && (
             <div className="rounded-xl border border-yellow-800/50 bg-yellow-900/20 p-6 text-center">
               <p className="mb-4 text-lg font-bold text-yellow-300">
-                {battleState.status === "player_win" && "Congratulations, you won!"}
-                {battleState.status === "opponent_win" && "Better luck next time..."}
-                {battleState.status === "draw" && "It's a draw!"}
+                <BattleOverMessage status={battleState.status} />
               </p>
               <button
                 type="button"

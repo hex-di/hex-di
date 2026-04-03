@@ -54,6 +54,109 @@ export interface OnboardingWizardProps {
 }
 
 // =============================================================================
+// Quick Start Navigation Helper
+// =============================================================================
+
+const QUICK_START_ROUTES: Record<string, string> = {
+  "create-project": "/taskflow/projects/new",
+  "add-task": "/taskflow/tasks/new",
+};
+
+// =============================================================================
+// Initial Profile Builder
+// =============================================================================
+
+function buildInitialProfile(
+  userState: ReturnType<UserSessionStoreInstance["getState"]>
+): OnboardingProfile {
+  return {
+    displayName: userState.user?.displayName ?? DEFAULT_PROFILE.displayName,
+    role: userState.user?.role ?? DEFAULT_PROFILE.role,
+    avatarUrl: userState.user?.avatarUrl ?? DEFAULT_PROFILE.avatarUrl,
+    bio: userState.user?.bio ?? DEFAULT_PROFILE.bio,
+  };
+}
+
+// =============================================================================
+// Back Step Helper
+// =============================================================================
+
+const BACK_STEP_MAP: Partial<Record<WizardStep, WizardStep>> = {
+  2: 1,
+  3: 2,
+};
+
+// =============================================================================
+// Wizard Step Content
+// =============================================================================
+
+interface WizardStepContentProps {
+  readonly currentStep: WizardStep;
+  readonly formData: ReturnType<typeof useOnboardingFormData>;
+  readonly userEmail: string | undefined;
+  readonly isSubmitting: boolean;
+  readonly firstName: string;
+  readonly onStep1Next: (data: OnboardingProfile) => void;
+  readonly onStep2Next: (data: OnboardingTeam) => void;
+  readonly onBack: () => void;
+  readonly onStep2Skip: () => void;
+  readonly onStep3Complete: (data: OnboardingPreferences) => void;
+  readonly onGoToDashboard: () => void;
+  readonly onQuickStart: (actionId: string) => void;
+}
+
+function WizardStepContent({
+  currentStep,
+  formData,
+  userEmail,
+  isSubmitting,
+  firstName,
+  onStep1Next,
+  onStep2Next,
+  onBack,
+  onStep2Skip,
+  onStep3Complete,
+  onGoToDashboard,
+  onQuickStart,
+}: WizardStepContentProps): React.ReactElement | null {
+  if (currentStep === 1) {
+    return <Step1Profile initialData={formData.profile} email={userEmail} onNext={onStep1Next} />;
+  }
+
+  if (currentStep === 2) {
+    return (
+      <Step2Team
+        initialData={formData.team}
+        userEmailDomain={userEmail?.split("@")[1]}
+        onNext={onStep2Next}
+        onBack={onBack}
+        onSkip={onStep2Skip}
+        showSkip
+      />
+    );
+  }
+
+  if (currentStep === 3) {
+    return (
+      <Step3Preferences
+        initialData={formData.preferences}
+        onComplete={onStep3Complete}
+        onBack={onBack}
+        isSubmitting={isSubmitting}
+      />
+    );
+  }
+
+  return (
+    <WizardComplete
+      userName={firstName}
+      onGoToDashboard={onGoToDashboard}
+      onQuickStart={onQuickStart}
+    />
+  );
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -92,12 +195,7 @@ export function OnboardingWizard({
 
   // Get initial user data from store
   const userState = userSessionStore.getState();
-  const initialProfile: OnboardingProfile = {
-    displayName: userState.user?.displayName ?? DEFAULT_PROFILE.displayName,
-    role: userState.user?.role ?? DEFAULT_PROFILE.role,
-    avatarUrl: userState.user?.avatarUrl ?? DEFAULT_PROFILE.avatarUrl,
-    bio: userState.user?.bio ?? DEFAULT_PROFILE.bio,
-  };
+  const initialProfile = buildInitialProfile(userState);
 
   // Form data management
   const formData = useOnboardingFormData(initialProfile, DEFAULT_TEAM, DEFAULT_PREFERENCES);
@@ -131,6 +229,16 @@ export function OnboardingWizard({
     setCurrentStep(3);
   }, [formData]);
 
+  const applyUIPreferences = React.useCallback(
+    (data: OnboardingPreferences) => {
+      if (!uiPreferencesStore) return;
+      const uiState = uiPreferencesStore.getState();
+      uiState.setTheme(data.theme);
+      uiState.setCompactMode(data.compactMode);
+    },
+    [uiPreferencesStore]
+  );
+
   const handleStep3Complete = React.useCallback(
     async (data: OnboardingPreferences) => {
       formData.setPreferences(data);
@@ -148,12 +256,7 @@ export function OnboardingWizard({
           bio: formData.profile.bio,
         });
 
-        // Update UI preferences store
-        if (uiPreferencesStore) {
-          const uiState = uiPreferencesStore.getState();
-          uiState.setTheme(data.theme);
-          uiState.setCompactMode(data.compactMode);
-        }
+        applyUIPreferences(data);
 
         // Mark onboarding as complete (sets isNewUser to false)
         userSessionStore.getState().completeOnboarding();
@@ -167,14 +270,13 @@ export function OnboardingWizard({
         setIsSubmitting(false);
       }
     },
-    [formData, userSessionStore, uiPreferencesStore]
+    [formData, userSessionStore, applyUIPreferences]
   );
 
   const handleBack = React.useCallback(() => {
-    if (currentStep === 2) {
-      setCurrentStep(1);
-    } else if (currentStep === 3) {
-      setCurrentStep(2);
+    const previousStep = BACK_STEP_MAP[currentStep];
+    if (previousStep) {
+      setCurrentStep(previousStep);
     }
   }, [currentStep]);
 
@@ -188,20 +290,11 @@ export function OnboardingWizard({
 
   const handleQuickStart = React.useCallback(
     (actionId: string) => {
-      // Handle quick start actions
-      switch (actionId) {
-        case "create-project":
-          void navigate("/taskflow/projects/new");
-          break;
-        case "add-task":
-          void navigate("/taskflow/tasks/new");
-          break;
-        case "quick-tour":
-          // Could open a tour modal or navigate to tour page
-          handleGoToDashboard();
-          break;
-        default:
-          handleGoToDashboard();
+      const route = QUICK_START_ROUTES[actionId];
+      if (route) {
+        void navigate(route);
+      } else {
+        handleGoToDashboard();
       }
     },
     [navigate, handleGoToDashboard]
@@ -224,37 +317,20 @@ export function OnboardingWizard({
         )}
 
         {/* Step Content */}
-        {currentStep === 1 && (
-          <Step1Profile initialData={formData.profile} email={userEmail} onNext={handleStep1Next} />
-        )}
-
-        {currentStep === 2 && (
-          <Step2Team
-            initialData={formData.team}
-            userEmailDomain={userEmail?.split("@")[1]}
-            onNext={handleStep2Next}
-            onBack={handleBack}
-            onSkip={handleStep2Skip}
-            showSkip
-          />
-        )}
-
-        {currentStep === 3 && (
-          <Step3Preferences
-            initialData={formData.preferences}
-            onComplete={(data) => void handleStep3Complete(data)}
-            onBack={handleBack}
-            isSubmitting={isSubmitting}
-          />
-        )}
-
-        {currentStep === "complete" && (
-          <WizardComplete
-            userName={firstName}
-            onGoToDashboard={handleGoToDashboard}
-            onQuickStart={handleQuickStart}
-          />
-        )}
+        <WizardStepContent
+          currentStep={currentStep}
+          formData={formData}
+          userEmail={userEmail}
+          isSubmitting={isSubmitting}
+          firstName={firstName}
+          onStep1Next={handleStep1Next}
+          onStep2Next={handleStep2Next}
+          onBack={handleBack}
+          onStep2Skip={handleStep2Skip}
+          onStep3Complete={data => void handleStep3Complete(data)}
+          onGoToDashboard={handleGoToDashboard}
+          onQuickStart={handleQuickStart}
+        />
       </div>
     </div>
   );

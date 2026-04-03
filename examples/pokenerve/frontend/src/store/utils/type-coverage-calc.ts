@@ -78,6 +78,25 @@ function computeCoveragePercentage(coveredTypes: readonly string[]): number {
   return Math.round((coveredTypes.length / allTypes.length) * 100);
 }
 
+function findCoveredTargetTypes(
+  typeSlots: readonly { type: { name: string } }[],
+  targetSet: ReadonlySet<string>
+): string[] {
+  const result: string[] = [];
+  for (const typeSlot of typeSlots) {
+    const multipliers = typeMultipliersMap.get(typeSlot.type.name);
+    if (multipliers === undefined) continue;
+    for (let i = 0; i < allTypes.length; i++) {
+      if (multipliers[i] >= SUPER_EFFECTIVE_THRESHOLD && targetSet.has(allTypes[i])) {
+        if (!result.includes(allTypes[i])) {
+          result.push(allTypes[i]);
+        }
+      }
+    }
+  }
+  return result;
+}
+
 /**
  * Find Pokemon that cover a given set of types via super-effective STAB.
  */
@@ -99,20 +118,7 @@ function findPokemonCoveringTypes(
   for (const entry of gen1Data) {
     if (excludeIds.has(entry.id)) continue;
 
-    const coversTypes: string[] = [];
-    for (const typeSlot of entry.types) {
-      const attackType = typeSlot.type.name;
-      const multipliers = typeMultipliersMap.get(attackType);
-      if (multipliers === undefined) continue;
-      for (let i = 0; i < allTypes.length; i++) {
-        if (multipliers[i] >= SUPER_EFFECTIVE_THRESHOLD && targetSet.has(allTypes[i])) {
-          if (!coversTypes.includes(allTypes[i])) {
-            coversTypes.push(allTypes[i]);
-          }
-        }
-      }
-    }
-
+    const coversTypes = findCoveredTargetTypes(entry.types, targetSet);
     if (coversTypes.length > 0) {
       candidates.push({
         pokemonId: entry.id,

@@ -34,38 +34,25 @@ interface CoverageAnalysis {
 // Analysis logic
 // ---------------------------------------------------------------------------
 
-function analyzeTeamCoverage(team: readonly TeamMember[]): CoverageAnalysis {
-  if (team.length === 0) {
-    return {
-      coveredTypes: [],
-      uncoveredTypes: [...ALL_TYPES],
-      teamWeaknesses: [],
-      teamResistances: [],
-      suggestedTypes: [],
-    };
-  }
-
-  // Collect all unique types on the team for offensive coverage
+function collectTeamTypes(team: readonly TeamMember[]): Set<string> {
   const teamTypes = new Set<string>();
   for (const member of team) {
     for (const t of member.types) {
       teamTypes.add(t);
     }
   }
+  return teamTypes;
+}
 
-  // A defending type is "covered" if at least one team member's type
-  // is super-effective (2x) against it
+function computeOffensiveCoverage(teamTypes: ReadonlySet<string>): {
+  coveredTypes: string[];
+  uncoveredTypes: string[];
+} {
   const coveredTypes: string[] = [];
   const uncoveredTypes: string[] = [];
 
   for (const defendType of ALL_TYPES) {
-    let isCovered = false;
-    for (const attackType of teamTypes) {
-      if (getEffectiveness(attackType, [defendType]) >= 2) {
-        isCovered = true;
-        break;
-      }
-    }
+    const isCovered = isTypeCovered(defendType, teamTypes);
     if (isCovered) {
       coveredTypes.push(defendType);
     } else {
@@ -73,8 +60,20 @@ function analyzeTeamCoverage(team: readonly TeamMember[]): CoverageAnalysis {
     }
   }
 
-  // Team weaknesses: types that are super-effective against at least one
-  // team member (considering their dual typing)
+  return { coveredTypes, uncoveredTypes };
+}
+
+function isTypeCovered(defendType: string, teamTypes: ReadonlySet<string>): boolean {
+  for (const attackType of teamTypes) {
+    if (getEffectiveness(attackType, [defendType]) >= 2) return true;
+  }
+  return false;
+}
+
+function computeDefensiveProfile(team: readonly TeamMember[]): {
+  weaknessCount: Map<string, number>;
+  resistCount: Map<string, number>;
+} {
   const weaknessCount = new Map<string, number>();
   const resistCount = new Map<string, number>();
 
@@ -89,49 +88,69 @@ function analyzeTeamCoverage(team: readonly TeamMember[]): CoverageAnalysis {
     }
   }
 
-  // Types that hit 2+ team members are notable weaknesses
-  const teamWeaknesses: string[] = [];
+  return { weaknessCount, resistCount };
+}
+
+function extractWeaknesses(weaknessCount: Map<string, number>): string[] {
+  const notable: string[] = [];
   for (const [typeName, count] of weaknessCount) {
-    if (count >= 2) {
-      teamWeaknesses.push(typeName);
-    }
+    if (count >= 2) notable.push(typeName);
   }
-  // If no type hits 2+ members, fall back to any type that hits at least 1
-  if (teamWeaknesses.length === 0) {
+  // Fall back to any type that hits at least 1
+  if (notable.length === 0) {
     for (const [typeName] of weaknessCount) {
-      teamWeaknesses.push(typeName);
+      notable.push(typeName);
     }
   }
+  return notable;
+}
 
-  const teamResistances: string[] = [];
+function extractResistances(resistCount: Map<string, number>): string[] {
+  const result: string[] = [];
   for (const [typeName, count] of resistCount) {
-    if (count >= 2) {
-      teamResistances.push(typeName);
-    }
+    if (count >= 2) result.push(typeName);
   }
+  return result;
+}
 
-  // Suggestions: find types that would cover the most uncovered types
+function computeSuggestions(
+  teamTypes: ReadonlySet<string>,
+  uncoveredTypes: readonly string[]
+): string[] {
   const suggestions: { name: string; coversCount: number }[] = [];
   for (const candidateType of ALL_TYPES) {
     if (teamTypes.has(candidateType)) continue;
     let coversCount = 0;
     for (const uncovered of uncoveredTypes) {
-      if (getEffectiveness(candidateType, [uncovered]) >= 2) {
-        coversCount++;
-      }
+      if (getEffectiveness(candidateType, [uncovered]) >= 2) coversCount++;
     }
-    if (coversCount > 0) {
-      suggestions.push({ name: candidateType, coversCount });
-    }
+    if (coversCount > 0) suggestions.push({ name: candidateType, coversCount });
   }
   suggestions.sort((a, b) => b.coversCount - a.coversCount);
+  return suggestions.slice(0, 5).map(s => s.name);
+}
+
+function analyzeTeamCoverage(team: readonly TeamMember[]): CoverageAnalysis {
+  if (team.length === 0) {
+    return {
+      coveredTypes: [],
+      uncoveredTypes: [...ALL_TYPES],
+      teamWeaknesses: [],
+      teamResistances: [],
+      suggestedTypes: [],
+    };
+  }
+
+  const teamTypes = collectTeamTypes(team);
+  const { coveredTypes, uncoveredTypes } = computeOffensiveCoverage(teamTypes);
+  const { weaknessCount, resistCount } = computeDefensiveProfile(team);
 
   return {
     coveredTypes,
     uncoveredTypes,
-    teamWeaknesses,
-    teamResistances,
-    suggestedTypes: suggestions.slice(0, 5).map(s => s.name),
+    teamWeaknesses: extractWeaknesses(weaknessCount),
+    teamResistances: extractResistances(resistCount),
+    suggestedTypes: computeSuggestions(teamTypes, uncoveredTypes),
   };
 }
 

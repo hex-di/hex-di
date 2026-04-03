@@ -248,6 +248,88 @@ function useSampledMetrics(): SampledMetrics {
 }
 
 // ---------------------------------------------------------------------------
+// Health threshold helpers
+// ---------------------------------------------------------------------------
+
+function getDurationHealth(avgDuration: number): MetricHealth {
+  if (avgDuration < 5) return "green";
+  if (avgDuration < 20) return "yellow";
+  return "red";
+}
+
+function getCacheHealth(cacheHitRate: number): MetricHealth {
+  if (cacheHitRate > 0.7) return "green";
+  if (cacheHitRate > 0.4) return "yellow";
+  return "red";
+}
+
+function getErrorHealth(errorRate: number): MetricHealth {
+  if (errorRate < 0.01) return "green";
+  if (errorRate < 0.05) return "yellow";
+  return "red";
+}
+
+function getScopeHealth(activeScopes: number): MetricHealth {
+  if (activeScopes < 10) return "green";
+  if (activeScopes < 50) return "yellow";
+  return "red";
+}
+
+function buildMetrics(
+  avgDuration: number,
+  cacheHitRate: number,
+  errorRate: number,
+  activeScopes: number,
+  totalSpans: number,
+  sampled: SampledMetrics
+): readonly MetricCardData[] {
+  return [
+    {
+      porygonName: "Neural Response Time",
+      label: "Resolution p50/p95/p99",
+      value: `${String(Math.round(avgDuration * 100) / 100)}ms`,
+      health: getDurationHealth(avgDuration),
+      sparklineData: sampled.avgDurations,
+    },
+    {
+      porygonName: "Memory Efficiency",
+      label: "Cache Hit Rate",
+      value: `${String(Math.round(cacheHitRate * 1000) / 10)}%`,
+      health: getCacheHealth(cacheHitRate),
+      sparklineData: sampled.cacheHitRates,
+    },
+    {
+      porygonName: "Pain Signals",
+      label: "Error Rate",
+      value: `${String(Math.round(errorRate * 10000) / 100)}%`,
+      health: getErrorHealth(errorRate),
+      sparklineData: sampled.errorRates,
+    },
+    {
+      porygonName: "Active Memory Banks",
+      label: "Scope Count",
+      value: String(activeScopes),
+      health: getScopeHealth(activeScopes),
+      sparklineData: sampled.scopeCounts,
+    },
+    {
+      porygonName: "Synapse Throughput",
+      label: "Total Spans",
+      value: String(totalSpans),
+      health: "green",
+      sparklineData: sampled.totalSpans,
+    },
+    {
+      porygonName: "Time Alive",
+      label: "Uptime",
+      value: formatUptime(sampled.uptimeMs),
+      health: "green",
+      sparklineData: [], // Uptime is monotonically increasing, no sparkline needed
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -264,62 +346,14 @@ function VitalSigns(): ReactNode {
   const cacheHitRate = summary?.cacheHitRate ?? 0;
   const errorRate = totalSpans > 0 ? errorCount / totalSpans : 0;
 
-  // Determine health thresholds
-  const durationHealth: MetricHealth =
-    avgDuration < 5 ? "green" : avgDuration < 20 ? "yellow" : "red";
-  const cacheHealth: MetricHealth =
-    cacheHitRate > 0.7 ? "green" : cacheHitRate > 0.4 ? "yellow" : "red";
-  const errorHealth: MetricHealth =
-    errorRate < 0.01 ? "green" : errorRate < 0.05 ? "yellow" : "red";
-  const scopeHealth: MetricHealth =
-    activeScopes < 10 ? "green" : activeScopes < 50 ? "yellow" : "red";
-  const throughputHealth: MetricHealth = "green";
-  const uptimeHealth: MetricHealth = "green";
-
-  const metrics: readonly MetricCardData[] = [
-    {
-      porygonName: "Neural Response Time",
-      label: "Resolution p50/p95/p99",
-      value: `${String(Math.round(avgDuration * 100) / 100)}ms`,
-      health: durationHealth,
-      sparklineData: sampled.avgDurations,
-    },
-    {
-      porygonName: "Memory Efficiency",
-      label: "Cache Hit Rate",
-      value: `${String(Math.round(cacheHitRate * 1000) / 10)}%`,
-      health: cacheHealth,
-      sparklineData: sampled.cacheHitRates,
-    },
-    {
-      porygonName: "Pain Signals",
-      label: "Error Rate",
-      value: `${String(Math.round(errorRate * 10000) / 100)}%`,
-      health: errorHealth,
-      sparklineData: sampled.errorRates,
-    },
-    {
-      porygonName: "Active Memory Banks",
-      label: "Scope Count",
-      value: String(activeScopes),
-      health: scopeHealth,
-      sparklineData: sampled.scopeCounts,
-    },
-    {
-      porygonName: "Synapse Throughput",
-      label: "Total Spans",
-      value: String(totalSpans),
-      health: throughputHealth,
-      sparklineData: sampled.totalSpans,
-    },
-    {
-      porygonName: "Time Alive",
-      label: "Uptime",
-      value: formatUptime(sampled.uptimeMs),
-      health: uptimeHealth,
-      sparklineData: [], // Uptime is monotonically increasing, no sparkline needed
-    },
-  ];
+  const metrics = buildMetrics(
+    avgDuration,
+    cacheHitRate,
+    errorRate,
+    activeScopes,
+    totalSpans,
+    sampled
+  );
 
   return (
     <div className="flex h-full flex-col">

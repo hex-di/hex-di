@@ -83,6 +83,100 @@ function UnassignedIcon({ className = "w-12 h-12" }: { readonly className?: stri
 }
 
 // =============================================================================
+// Avatar Preview Component
+// =============================================================================
+
+interface SelectedUserInfo {
+  readonly avatarUrl: string | null;
+  readonly displayName: string;
+  readonly role: string;
+}
+
+function AvatarPreview({ selectedUser }: { readonly selectedUser: SelectedUserInfo | undefined }) {
+  return (
+    <div className="flex justify-center">
+      <div className="text-center">
+        {selectedUser ? (
+          <UserAvatar
+            avatarUrl={selectedUser.avatarUrl}
+            displayName={selectedUser.displayName}
+            size="lg"
+          />
+        ) : (
+          <UnassignedIcon className="w-16 h-16" />
+        )}
+        <p className="mt-2 text-sm font-medium text-gray-700">
+          {selectedUser ? selectedUser.displayName : "Unassigned"}
+        </p>
+        {selectedUser && <p className="text-xs text-gray-500">{selectedUser.role}</p>}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Team Member Grid Component
+// =============================================================================
+
+interface TeamMemberGridProps {
+  readonly users: ReadonlyArray<SelectedUserInfo & { readonly id: string }>;
+  readonly selectedAssigneeId: string | null;
+  readonly disabled: boolean;
+  readonly onChange: (data: { assigneeId: string | null }) => void;
+}
+
+function TeamMemberGrid({ users, selectedAssigneeId, disabled, onChange }: TeamMemberGridProps) {
+  const selectionClass = (isSelected: boolean): string =>
+    isSelected ? "bg-blue-50 ring-2 ring-blue-500" : "bg-gray-50 hover:bg-gray-100";
+
+  const disabledClass = disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer";
+
+  return (
+    <div className="mt-6">
+      <p className="text-sm text-gray-500 mb-3 text-center">Or select from your team:</p>
+      <div className="flex flex-wrap justify-center gap-4">
+        {/* Unassigned option */}
+        <button
+          type="button"
+          data-testid="assignee-option-unassigned"
+          onClick={() => onChange({ assigneeId: null })}
+          disabled={disabled}
+          className={`
+            flex flex-col items-center p-3 rounded-lg transition-all
+            ${selectionClass(selectedAssigneeId === null)}
+            ${disabledClass}
+          `}
+        >
+          <UnassignedIcon className="w-10 h-10" />
+          <span className="mt-1 text-xs font-medium text-gray-600">Unassigned</span>
+        </button>
+
+        {/* Team member options */}
+        {users.slice(0, 6).map(user => (
+          <button
+            key={user.id}
+            type="button"
+            data-testid={`assignee-option-${user.id}`}
+            onClick={() => onChange({ assigneeId: user.id })}
+            disabled={disabled}
+            className={`
+              flex flex-col items-center p-3 rounded-lg transition-all
+              ${selectionClass(selectedAssigneeId === user.id)}
+              ${disabledClass}
+            `}
+          >
+            <UserAvatar avatarUrl={user.avatarUrl} displayName={user.displayName} size="sm" />
+            <span className="mt-1 text-xs font-medium text-gray-600 max-w-[60px] truncate">
+              {user.displayName.split(" ")[0]}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -120,6 +214,8 @@ export function Step2Assignment({
     onChange({ assigneeId: value || null });
   };
 
+  const showTeamGrid = users && users.length > 0 && !usersLoading;
+
   return (
     <div data-testid="form-step-2" className="space-y-6">
       {/* Section header */}
@@ -129,23 +225,7 @@ export function Step2Assignment({
       </div>
 
       {/* Avatar preview */}
-      <div className="flex justify-center">
-        <div className="text-center">
-          {selectedUser ? (
-            <UserAvatar
-              avatarUrl={selectedUser.avatarUrl}
-              displayName={selectedUser.displayName}
-              size="lg"
-            />
-          ) : (
-            <UnassignedIcon className="w-16 h-16" />
-          )}
-          <p className="mt-2 text-sm font-medium text-gray-700">
-            {selectedUser ? selectedUser.displayName : "Unassigned"}
-          </p>
-          {selectedUser && <p className="text-xs text-gray-500">{selectedUser.role}</p>}
-        </div>
-      </div>
+      <AvatarPreview selectedUser={selectedUser} />
 
       {/* Assignee dropdown */}
       <div className="max-w-md mx-auto">
@@ -178,56 +258,13 @@ export function Step2Assignment({
       </div>
 
       {/* Team member grid (alternative selection UI) */}
-      {users && users.length > 0 && !usersLoading && (
-        <div className="mt-6">
-          <p className="text-sm text-gray-500 mb-3 text-center">Or select from your team:</p>
-          <div className="flex flex-wrap justify-center gap-4">
-            {/* Unassigned option */}
-            <button
-              type="button"
-              data-testid="assignee-option-unassigned"
-              onClick={() => onChange({ assigneeId: null })}
-              disabled={disabled}
-              className={`
-                flex flex-col items-center p-3 rounded-lg transition-all
-                ${
-                  data.assigneeId === null
-                    ? "bg-blue-50 ring-2 ring-blue-500"
-                    : "bg-gray-50 hover:bg-gray-100"
-                }
-                ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-              `}
-            >
-              <UnassignedIcon className="w-10 h-10" />
-              <span className="mt-1 text-xs font-medium text-gray-600">Unassigned</span>
-            </button>
-
-            {/* Team member options */}
-            {users.slice(0, 6).map(user => (
-              <button
-                key={user.id}
-                type="button"
-                data-testid={`assignee-option-${user.id}`}
-                onClick={() => onChange({ assigneeId: user.id })}
-                disabled={disabled}
-                className={`
-                  flex flex-col items-center p-3 rounded-lg transition-all
-                  ${
-                    data.assigneeId === user.id
-                      ? "bg-blue-50 ring-2 ring-blue-500"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  }
-                  ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-                `}
-              >
-                <UserAvatar avatarUrl={user.avatarUrl} displayName={user.displayName} size="sm" />
-                <span className="mt-1 text-xs font-medium text-gray-600 max-w-[60px] truncate">
-                  {user.displayName.split(" ")[0]}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+      {showTeamGrid && (
+        <TeamMemberGrid
+          users={users}
+          selectedAssigneeId={data.assigneeId}
+          disabled={disabled}
+          onChange={onChange}
+        />
       )}
     </div>
   );
