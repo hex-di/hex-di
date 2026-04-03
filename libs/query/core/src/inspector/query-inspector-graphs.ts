@@ -82,7 +82,7 @@ function collectRuntimeEdges(
 }
 
 function buildWarnings(
-  cycles: string[][],
+  cycles: ReadonlyArray<ReadonlyArray<string>>,
   maxCascadeDepth: number,
   runtimeInvalidations: ReadonlyMap<string, unknown>,
   staticEdgeKeys: Set<string>
