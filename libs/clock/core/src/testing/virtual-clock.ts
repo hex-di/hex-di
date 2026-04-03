@@ -44,6 +44,7 @@ export interface VirtualClockAdapterInterface extends ClockService {
   readonly setAutoAdvance: (ms: number) => Result<void, ClockRangeError>;
   readonly getAutoAdvance: () => number;
   /** Internal: register an advance listener (used by VirtualTimerScheduler). */
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly _onAdvance?: (callback: (ms: number) => void) => void;
 }
 
@@ -55,59 +56,73 @@ const DEFAULT_WALL_CLOCK = 1707753600000; // 2024-02-12T12:00:00Z
  * Returns err(ClockRangeError) when options contain non-finite values.
  * NOT frozen — mutable internal state required for advance(), set(), etc.
  */
+function validateFiniteOption(
+  name: string,
+  value: number | undefined
+): ClockRangeError | undefined {
+  if (value !== undefined && !Number.isFinite(value)) {
+    return createClockRangeError(
+      name,
+      value,
+      `VirtualClock option '${name}' must be a finite number, got ${value}`
+    );
+  }
+  return undefined;
+}
+
+function validateVirtualClockOptions(options?: VirtualClockOptions): ClockRangeError | undefined {
+  if (options === undefined) return undefined;
+
+  const checks: Array<ClockRangeError | undefined> = [
+    validateFiniteOption("initialMonotonic", options.initialMonotonic),
+    validateFiniteOption("initialWallClock", options.initialWallClock),
+    validateFiniteOption("initialHighRes", options.initialHighRes),
+  ];
+
+  for (const e of checks) {
+    if (e !== undefined) return e;
+  }
+
+  if (
+    options.autoAdvance !== undefined &&
+    (!Number.isFinite(options.autoAdvance) || options.autoAdvance < 0)
+  ) {
+    return createClockRangeError(
+      "autoAdvance",
+      options.autoAdvance,
+      `VirtualClock option 'autoAdvance' must be a non-negative finite number, got ${options.autoAdvance}`
+    );
+  }
+
+  return undefined;
+}
+
+function validateFiniteField(
+  name: string,
+  value: number | undefined,
+  prefix: string
+): ClockRangeError | undefined {
+  if (value !== undefined && !Number.isFinite(value)) {
+    return createClockRangeError(
+      name,
+      value,
+      `${prefix} '${name}' must be a finite number, got ${value}`
+    );
+  }
+  return undefined;
+}
+
 export function createVirtualClock(
   options?: VirtualClockOptions
 ): Result<VirtualClockAdapterInterface, ClockRangeError> {
-  const initialMonotonic = options?.initialMonotonic ?? 0;
+  const validationError = validateVirtualClockOptions(options);
+  if (validationError !== undefined) return err(validationError);
+
   const initialWallClock = options?.initialWallClock ?? DEFAULT_WALL_CLOCK;
-  const initialHighRes = options?.initialHighRes ?? initialWallClock;
-  const initialAutoAdvance = options?.autoAdvance ?? 0;
-
-  // Validate options — reject non-finite values only
-  if (options?.initialMonotonic !== undefined && !Number.isFinite(options.initialMonotonic)) {
-    return err(
-      createClockRangeError(
-        "initialMonotonic",
-        options.initialMonotonic,
-        `VirtualClock option 'initialMonotonic' must be a finite number, got ${options.initialMonotonic}`
-      )
-    );
-  }
-  if (options?.initialWallClock !== undefined && !Number.isFinite(options.initialWallClock)) {
-    return err(
-      createClockRangeError(
-        "initialWallClock",
-        options.initialWallClock,
-        `VirtualClock option 'initialWallClock' must be a finite number, got ${options.initialWallClock}`
-      )
-    );
-  }
-  if (options?.initialHighRes !== undefined && !Number.isFinite(options.initialHighRes)) {
-    return err(
-      createClockRangeError(
-        "initialHighRes",
-        options.initialHighRes,
-        `VirtualClock option 'initialHighRes' must be a finite number, got ${options.initialHighRes}`
-      )
-    );
-  }
-  if (
-    options?.autoAdvance !== undefined &&
-    (!Number.isFinite(options.autoAdvance) || options.autoAdvance < 0)
-  ) {
-    return err(
-      createClockRangeError(
-        "autoAdvance",
-        options.autoAdvance,
-        `VirtualClock option 'autoAdvance' must be a non-negative finite number, got ${options.autoAdvance}`
-      )
-    );
-  }
-
-  let monotonic = initialMonotonic;
+  let monotonic = options?.initialMonotonic ?? 0;
   let wallClock = initialWallClock;
-  let highRes = initialHighRes;
-  let autoAdvanceMs = initialAutoAdvance;
+  let highRes = options?.initialHighRes ?? initialWallClock;
+  let autoAdvanceMs = options?.autoAdvance ?? 0;
 
   const advanceListeners: Array<(ms: number) => void> = [];
 
@@ -120,31 +135,28 @@ export function createVirtualClock(
     }
   };
 
-  // The VirtualClockAdapterInterface is NOT frozen
+  const maybeAutoAdvance = (): void => {
+    if (autoAdvanceMs > 0) doAdvance(autoAdvanceMs);
+  };
+
   const adapter: VirtualClockAdapterInterface = {
     monotonicNow() {
       const value = asMonotonic(monotonic);
-      if (autoAdvanceMs > 0) {
-        doAdvance(autoAdvanceMs);
-      }
+      maybeAutoAdvance();
       return value;
     },
 
     wallClockNow() {
       const value = asWallClock(wallClock);
       // Stryker disable next-line all -- EQUIVALENT: doAdvance(0) is a no-op; CE(true) with advance(0) produces identical observable state
-      if (autoAdvanceMs > 0) {
-        doAdvance(autoAdvanceMs);
-      }
+      maybeAutoAdvance();
       return value;
     },
 
     highResNow() {
       const value = asHighRes(highRes);
       // Stryker disable next-line all -- EQUIVALENT: doAdvance(0) is a no-op; CE(true) with advance(0) produces identical observable state
-      if (autoAdvanceMs > 0) {
-        doAdvance(autoAdvanceMs);
-      }
+      maybeAutoAdvance();
       return value;
     },
 
@@ -157,53 +169,22 @@ export function createVirtualClock(
     },
 
     set(values: Partial<VirtualClockValues>): Result<void, ClockRangeError> {
-      if (values.monotonic !== undefined && !Number.isFinite(values.monotonic)) {
-        return err(
-          createClockRangeError(
-            "monotonic",
-            values.monotonic,
-            `set() 'monotonic' must be a finite number, got ${values.monotonic}`
-          )
-        );
-      }
-      if (values.wallClock !== undefined && !Number.isFinite(values.wallClock)) {
-        return err(
-          createClockRangeError(
-            "wallClock",
-            values.wallClock,
-            `set() 'wallClock' must be a finite number, got ${values.wallClock}`
-          )
-        );
-      }
-      if (values.highRes !== undefined && !Number.isFinite(values.highRes)) {
-        return err(
-          createClockRangeError(
-            "highRes",
-            values.highRes,
-            `set() 'highRes' must be a finite number, got ${values.highRes}`
-          )
-        );
-      }
-      if (values.monotonic !== undefined) {
-        monotonic = values.monotonic;
-      }
-      if (values.wallClock !== undefined) {
-        wallClock = values.wallClock;
-      }
-      if (values.highRes !== undefined) {
-        highRes = values.highRes;
-      }
+      const fieldError =
+        validateFiniteField("monotonic", values.monotonic, "set()") ??
+        validateFiniteField("wallClock", values.wallClock, "set()") ??
+        validateFiniteField("highRes", values.highRes, "set()");
+      if (fieldError !== undefined) return err(fieldError);
+
+      if (values.monotonic !== undefined) monotonic = values.monotonic;
+      if (values.wallClock !== undefined) wallClock = values.wallClock;
+      if (values.highRes !== undefined) highRes = values.highRes;
       return ok(undefined);
     },
 
     jumpWallClock(ms: number): Result<void, ClockRangeError> {
       if (!Number.isFinite(ms)) {
         return err(
-          createClockRangeError(
-            "ms",
-            ms,
-            `jumpWallClock() 'ms' must be a finite number, got ${ms}`
-          )
+          createClockRangeError("ms", ms, `jumpWallClock() 'ms' must be a finite number, got ${ms}`)
         );
       }
       wallClock += ms;

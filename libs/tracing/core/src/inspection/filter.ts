@@ -20,61 +20,35 @@ import type { SpanFilter } from "./types.js";
  * @param filter - The filter criteria to match against
  * @returns true if the span matches all specified criteria
  */
+function matchesAttribute(
+  attributes: SpanData["attributes"],
+  key: string,
+  expected: string | boolean | undefined
+): boolean {
+  if (expected === undefined) return true;
+  const actual = attributes[key];
+  return actual === expected;
+}
+
+function matchesTimeRange(startTime: number, timeRange: SpanFilter["timeRange"]): boolean {
+  if (timeRange === undefined) return true;
+  if (timeRange.since !== undefined && startTime < timeRange.since) return false;
+  if (timeRange.until !== undefined && startTime > timeRange.until) return false;
+  return true;
+}
+
 export function matchesFilter(span: SpanData, filter: SpanFilter): boolean {
-  // Port name check
-  if (filter.portName !== undefined) {
-    const portAttr = span.attributes["hex-di.port.name"];
-    if (typeof portAttr !== "string" || portAttr !== filter.portName) {
-      return false;
-    }
-  }
+  if (!matchesAttribute(span.attributes, "hex-di.port.name", filter.portName)) return false;
+  if (!matchesAttribute(span.attributes, "hex-di.scope.id", filter.scopeId)) return false;
+  if (!matchesAttribute(span.attributes, "hex-di.resolution.cached", filter.cached)) return false;
 
-  // Scope ID check
-  if (filter.scopeId !== undefined) {
-    const scopeAttr = span.attributes["hex-di.scope.id"];
-    if (typeof scopeAttr !== "string" || scopeAttr !== filter.scopeId) {
-      return false;
-    }
-  }
-
-  // Cached check
-  if (filter.cached !== undefined) {
-    const cachedAttr = span.attributes["hex-di.resolution.cached"];
-    if (typeof cachedAttr !== "boolean" || cachedAttr !== filter.cached) {
-      return false;
-    }
-  }
-
-  // Duration checks
   const duration = span.endTime - span.startTime;
+  if (filter.minDuration !== undefined && duration < filter.minDuration) return false;
+  if (filter.maxDuration !== undefined && duration > filter.maxDuration) return false;
 
-  if (filter.minDuration !== undefined && duration < filter.minDuration) {
-    return false;
-  }
-
-  if (filter.maxDuration !== undefined && duration > filter.maxDuration) {
-    return false;
-  }
-
-  // Time range checks (based on startTime)
-  if (filter.timeRange !== undefined) {
-    if (filter.timeRange.since !== undefined && span.startTime < filter.timeRange.since) {
-      return false;
-    }
-    if (filter.timeRange.until !== undefined && span.startTime > filter.timeRange.until) {
-      return false;
-    }
-  }
-
-  // Status check
-  if (filter.status !== undefined && span.status !== filter.status) {
-    return false;
-  }
-
-  // Trace ID check
-  if (filter.traceId !== undefined && span.context.traceId !== filter.traceId) {
-    return false;
-  }
+  if (!matchesTimeRange(span.startTime, filter.timeRange)) return false;
+  if (filter.status !== undefined && span.status !== filter.status) return false;
+  if (filter.traceId !== undefined && span.context.traceId !== filter.traceId) return false;
 
   return true;
 }

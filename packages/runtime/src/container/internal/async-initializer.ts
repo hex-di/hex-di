@@ -181,81 +181,77 @@ export class AsyncInitializer {
    * @returns Array of levels, where each level contains adapters that can be initialized in parallel
    */
   private computeInitLevels(): InitLevel[] {
-    if (this.asyncAdapters.length === 0) {
-      return [];
-    }
+    if (this.asyncAdapters.length === 0) return [];
 
-    // Map port name to adapter for quick lookup
-    const adapterByPortName = new Map<string, RuntimeAdapter>();
-    for (const adapter of this.asyncAdapters) {
-      adapterByPortName.set(adapter.provides.__portName, adapter);
-    }
-
-    // Compute in-degree for each async adapter (count of async dependencies)
-    const inDegree = new Map<string, number>();
-    for (const adapter of this.asyncAdapters) {
-      const portName = adapter.provides.__portName;
-      let degree = 0;
-
-      for (const requiredPort of adapter.requires) {
-        // Only count dependencies on other async adapters
-        if (this.asyncPorts.has(requiredPort)) {
-          degree++;
-        }
-      }
-
-      inDegree.set(portName, degree);
-    }
-
-    // Kahn's algorithm: process nodes level by level
+    const inDegree = this.computeInDegrees();
     const levels: InitLevel[] = [];
     const processed = new Set<string>();
 
     while (processed.size < this.asyncAdapters.length) {
-      // Find all adapters with in-degree 0 (no unprocessed dependencies)
-      const currentLevel: RuntimeAdapter[] = [];
+      const currentLevel = this.collectReadyAdapters(processed, inDegree);
+      this.assertNoCircularDep(currentLevel, processed);
 
-      for (const adapter of this.asyncAdapters) {
-        const portName = adapter.provides.__portName;
-        if (!processed.has(portName) && inDegree.get(portName) === 0) {
-          currentLevel.push(adapter);
-        }
-      }
-
-      // Detect circular dependency (should never happen if graph validation passed)
-      if (currentLevel.length === 0) {
-        const remaining = this.asyncAdapters
-          .filter(a => !processed.has(a.provides.__portName))
-          .map(a => a.provides.__portName);
-        throw new Error(
-          `Circular dependency detected among async adapters: ${remaining.join(", ")}`
-        );
-      }
-
-      // Mark current level as processed and update in-degrees
       for (const adapter of currentLevel) {
         const portName = adapter.provides.__portName;
         processed.add(portName);
-
-        // Decrement in-degree for all adapters that depend on this one
-        for (const otherAdapter of this.asyncAdapters) {
-          if (processed.has(otherAdapter.provides.__portName)) {
-            continue;
-          }
-
-          for (const requiredPort of otherAdapter.requires) {
-            if (requiredPort.__portName === portName) {
-              const otherPortName = otherAdapter.provides.__portName;
-              inDegree.set(otherPortName, (inDegree.get(otherPortName) ?? 0) - 1);
-            }
-          }
-        }
+        this.decrementDependentInDegrees(portName, processed, inDegree);
       }
 
       levels.push(currentLevel);
     }
 
     return levels;
+  }
+
+  private computeInDegrees(): Map<string, number> {
+    const inDegree = new Map<string, number>();
+    for (const adapter of this.asyncAdapters) {
+      let degree = 0;
+      for (const requiredPort of adapter.requires) {
+        if (this.asyncPorts.has(requiredPort)) degree++;
+      }
+      inDegree.set(adapter.provides.__portName, degree);
+    }
+    return inDegree;
+  }
+
+  private collectReadyAdapters(
+    processed: Set<string>,
+    inDegree: Map<string, number>
+  ): RuntimeAdapter[] {
+    const ready: RuntimeAdapter[] = [];
+    for (const adapter of this.asyncAdapters) {
+      const portName = adapter.provides.__portName;
+      if (!processed.has(portName) && inDegree.get(portName) === 0) {
+        ready.push(adapter);
+      }
+    }
+    return ready;
+  }
+
+  private assertNoCircularDep(currentLevel: RuntimeAdapter[], processed: Set<string>): void {
+    if (currentLevel.length === 0) {
+      const remaining = this.asyncAdapters
+        .filter(a => !processed.has(a.provides.__portName))
+        .map(a => a.provides.__portName);
+      throw new Error(`Circular dependency detected among async adapters: ${remaining.join(", ")}`);
+    }
+  }
+
+  private decrementDependentInDegrees(
+    portName: string,
+    processed: Set<string>,
+    inDegree: Map<string, number>
+  ): void {
+    for (const otherAdapter of this.asyncAdapters) {
+      if (processed.has(otherAdapter.provides.__portName)) continue;
+      for (const requiredPort of otherAdapter.requires) {
+        if (requiredPort.__portName === portName) {
+          const otherPortName = otherAdapter.provides.__portName;
+          inDegree.set(otherPortName, (inDegree.get(otherPortName) ?? 0) - 1);
+        }
+      }
+    }
   }
 
   /**

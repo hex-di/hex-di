@@ -37,104 +37,64 @@ interface EdgeStateHandlerProps {
   readonly valuesNotCaptured?: boolean;
 }
 
-function EdgeStateHandler({
-  chains,
-  executions,
-  hasTracing,
-  activeView,
-  connectionStatus,
-  hasStatistics,
-  isAsync,
-  hasCombinator,
-  operationCount,
-  pathCount,
-  truncatedValues,
-  valuesNotCaptured,
-}: EdgeStateHandlerProps): React.ReactElement {
-  // No chains
-  if (chains.length === 0) {
+function getEdgeStateMessage(
+  props: EdgeStateHandlerProps
+): { testId: string; message: string } | undefined {
+  if (props.chains.length === 0) {
+    return { testId: "empty-chains-message", message: "No Result chains detected" };
+  }
+  if (props.executions !== undefined && props.executions.length === 0) {
+    return { testId: "empty-executions-message", message: "No executions recorded" };
+  }
+  if (!props.hasTracing && (props.activeView === "railway" || props.activeView === "log")) {
+    return {
+      testId: "no-tracing-message",
+      message: "Enable tracing to view detailed pipeline and log data",
+    };
+  }
+  if (props.activeView === "sankey" && props.hasStatistics === false) {
+    return { testId: "no-statistics-message", message: "No statistics available" };
+  }
+  if (props.activeView === "waterfall" && props.isAsync === false) {
+    return { testId: "sync-chain-message", message: "This chain is synchronous" };
+  }
+  if (props.activeView === "combinator" && props.hasCombinator === false) {
+    return { testId: "no-combinator-message", message: "No combinator operations" };
+  }
+  return undefined;
+}
+
+function EdgeStateHandler(props: EdgeStateHandlerProps): React.ReactElement {
+  const edgeMessage = getEdgeStateMessage(props);
+  if (edgeMessage !== undefined) {
     return (
       <div data-testid="edge-state-container">
-        <div data-testid="empty-chains-message">No Result chains detected</div>
+        <div data-testid={edgeMessage.testId}>{edgeMessage.message}</div>
       </div>
     );
   }
 
-  // No executions
-  if (executions !== undefined && executions.length === 0) {
-    return (
-      <div data-testid="edge-state-container">
-        <div data-testid="empty-executions-message">No executions recorded</div>
-      </div>
-    );
-  }
-
-  // No tracing
-  if (!hasTracing && (activeView === "railway" || activeView === "log")) {
-    return (
-      <div data-testid="edge-state-container">
-        <div data-testid="no-tracing-message">
-          Enable tracing to view detailed pipeline and log data
-        </div>
-      </div>
-    );
-  }
-
-  // Empty Sankey
-  if (activeView === "sankey" && hasStatistics === false) {
-    return (
-      <div data-testid="edge-state-container">
-        <div data-testid="no-statistics-message">No statistics available</div>
-      </div>
-    );
-  }
-
-  // Sync chain in waterfall
-  if (activeView === "waterfall" && isAsync === false) {
-    return (
-      <div data-testid="edge-state-container">
-        <div data-testid="sync-chain-message">This chain is synchronous</div>
-      </div>
-    );
-  }
-
-  // Non-combinator chain in combinator view
-  if (activeView === "combinator" && hasCombinator === false) {
-    return (
-      <div data-testid="edge-state-container">
-        <div data-testid="no-combinator-message">No combinator operations</div>
-      </div>
-    );
-  }
+  const { connectionStatus, operationCount, pathCount, truncatedValues, valuesNotCaptured } = props;
 
   return (
     <div data-testid="edge-state-container">
-      {/* Disconnected banner */}
       {connectionStatus === "disconnected" && (
         <div data-testid="disconnected-banner">Disconnected</div>
       )}
-
-      {/* Viewport culling indicator */}
       {operationCount !== undefined && (
         <div
           data-testid="viewport-culling-indicator"
           data-active={operationCount > 100 ? "true" : "false"}
         />
       )}
-
-      {/* Path pagination */}
       {pathCount !== undefined && pathCount > 50 && (
         <div data-testid="path-pagination">{pathCount - 50} more paths...</div>
       )}
-
-      {/* Truncated values */}
       {truncatedValues?.map(tv => (
         <div key={tv.stepIndex} data-testid={`truncated-value-${tv.stepIndex}`}>
           (truncated)
         </div>
       ))}
-
-      {/* Values not captured */}
       {valuesNotCaptured && <div data-testid="values-not-captured">(values not captured)</div>}
     </div>
   );

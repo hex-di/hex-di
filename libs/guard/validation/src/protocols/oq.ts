@@ -48,120 +48,129 @@ export interface OQOptions {
  */
 export function runOQ(options: OQOptions = {}): OQResult {
   const executedAt = new Date().toISOString();
-  const steps: ValidationStepResult[] = [];
   const mutationThreshold = options.mutationScoreThreshold ?? 80;
   const totalPassed = options.totalTestsPassed ?? 0;
   const totalFailed = options.totalTestsFailed ?? 0;
-
-  // Step 1: Core policy evaluation functional check
-  const evaluationResult = verifyPolicyEvaluation();
-  steps.push({
-    id: "OQ-001",
-    description: "Policy evaluation produces correct allow/deny decisions",
-    passed: evaluationResult.passed,
-    evidence: evaluationResult.evidence,
-    ...(evaluationResult.errorMessage !== undefined
-      ? { errorMessage: evaluationResult.errorMessage }
-      : {}),
-  });
-
-  // Step 2: Required API exports are present
-  const apiPresent = verifyApiExports();
-  steps.push({
-    id: "OQ-002",
-    description: "Required guard API exports are present",
-    passed: apiPresent.passed,
-    evidence: apiPresent.evidence,
-    ...(apiPresent.errorMessage !== undefined
-      ? { errorMessage: apiPresent.errorMessage }
-      : {}),
-  });
-
-  // Step 3: Signature exports exist
-  const signaturesPresent =
-    typeof createPermission === "function" &&
-    typeof createAuthSubject === "function" &&
-    typeof evaluate === "function";
-  steps.push({
-    id: "OQ-003",
-    description: "Signature-related exports are accessible",
-    passed: signaturesPresent,
-    evidence: `evaluate=${typeof evaluate}, createPermission=${typeof createPermission}`,
-  });
-
-  // Step 4: Error types are accessible
-  const errorTypesAccessible = typeof AccessDeniedError === "function";
-  steps.push({
-    id: "OQ-004",
-    description: "AccessDeniedError constructor is accessible",
-    passed: errorTypesAccessible,
-    evidence: `AccessDeniedError: ${typeof AccessDeniedError}`,
-  });
-
-  // Step 5: Mutation score threshold
-  const mutationOk =
-    options.mutationScore === undefined ||
-    options.mutationScore >= mutationThreshold;
-  steps.push({
-    id: "OQ-005",
-    description: `Mutation score >= ${mutationThreshold}%`,
-    passed: mutationOk,
-    evidence:
-      options.mutationScore !== undefined
-        ? `Actual: ${options.mutationScore}%`
-        : "Not measured",
-    ...(!mutationOk
-      ? {
-          errorMessage: `Mutation score ${options.mutationScore ?? "N/A"}% below threshold ${mutationThreshold}%`,
-        }
-      : {}),
-  });
-
-  // Step 6: DoD items verification
   const dodItems = options.verifiedDodItems ?? [];
-  steps.push({
-    id: "OQ-006",
-    description: "All DoD items verified by test suite",
-    passed: true,
-    evidence: dodItems.length > 0 ? dodItems.join(", ") : "No DoD items specified",
-  });
 
-  // Step 7: Test count completeness
-  if (options.expectedTestCount !== undefined) {
-    const testCountOk = totalPassed >= options.expectedTestCount && totalFailed === 0;
-    steps.push({
-      id: "OQ-007",
-      description: `All ${options.expectedTestCount} expected tests pass`,
-      passed: testCountOk,
-      evidence: `${totalPassed} passed, ${totalFailed} failed`,
-      ...(!testCountOk
-        ? {
-            errorMessage: `Expected ${options.expectedTestCount} passing tests, got ${totalPassed} passing and ${totalFailed} failing`,
-          }
-        : {}),
-    });
-  }
+  const steps: ValidationStepResult[] = [
+    toStep(
+      "OQ-001",
+      "Policy evaluation produces correct allow/deny decisions",
+      verifyPolicyEvaluation()
+    ),
+    toStep("OQ-002", "Required guard API exports are present", verifyApiExports()),
+    buildSignatureStep(),
+    buildErrorTypeStep(),
+    buildMutationStep(options.mutationScore, mutationThreshold),
+    buildDodStep(dodItems),
+    ...buildTestCountStep(options.expectedTestCount, totalPassed, totalFailed),
+  ];
 
-  const failedSteps = steps.filter((s) => !s.passed);
-  const passed = failedSteps.length === 0;
+  const failedSteps = steps.filter(s => !s.passed);
 
   const evidence: OQEvidence = {
     totalTests: totalPassed + totalFailed,
     passedTests: totalPassed,
     failedTests: totalFailed,
-    mutationScoreThresholdMet: mutationOk,
+    mutationScoreThresholdMet:
+      options.mutationScore === undefined || options.mutationScore >= mutationThreshold,
     ...(options.mutationScore !== undefined ? { mutationScore: options.mutationScore } : {}),
     dodItemsVerified: dodItems,
   };
 
   return {
     protocol: "OQ",
-    passed,
+    passed: failedSteps.length === 0,
     steps,
     evidence,
     executedAt,
     failedSteps,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Step builders (keep runOQ under complexity 15)
+// ---------------------------------------------------------------------------
+
+function toStep(id: string, description: string, check: CheckResult): ValidationStepResult {
+  return {
+    id,
+    description,
+    passed: check.passed,
+    evidence: check.evidence,
+    ...(check.errorMessage !== undefined ? { errorMessage: check.errorMessage } : {}),
+  };
+}
+
+function buildSignatureStep(): ValidationStepResult {
+  const passed =
+    typeof createPermission === "function" &&
+    typeof createAuthSubject === "function" &&
+    typeof evaluate === "function";
+  return {
+    id: "OQ-003",
+    description: "Signature-related exports are accessible",
+    passed,
+    evidence: `evaluate=${typeof evaluate}, createPermission=${typeof createPermission}`,
+  };
+}
+
+function buildErrorTypeStep(): ValidationStepResult {
+  const passed = typeof AccessDeniedError === "function";
+  return {
+    id: "OQ-004",
+    description: "AccessDeniedError constructor is accessible",
+    passed,
+    evidence: `AccessDeniedError: ${typeof AccessDeniedError}`,
+  };
+}
+
+function buildMutationStep(
+  mutationScore: number | undefined,
+  threshold: number
+): ValidationStepResult {
+  const passed = mutationScore === undefined || mutationScore >= threshold;
+  return {
+    id: "OQ-005",
+    description: `Mutation score >= ${threshold}%`,
+    passed,
+    evidence: mutationScore !== undefined ? `Actual: ${mutationScore}%` : "Not measured",
+    ...(!passed
+      ? { errorMessage: `Mutation score ${mutationScore ?? "N/A"}% below threshold ${threshold}%` }
+      : {}),
+  };
+}
+
+function buildDodStep(dodItems: readonly string[]): ValidationStepResult {
+  return {
+    id: "OQ-006",
+    description: "All DoD items verified by test suite",
+    passed: true,
+    evidence: dodItems.length > 0 ? dodItems.join(", ") : "No DoD items specified",
+  };
+}
+
+function buildTestCountStep(
+  expectedTestCount: number | undefined,
+  totalPassed: number,
+  totalFailed: number
+): ValidationStepResult[] {
+  if (expectedTestCount === undefined) return [];
+  const passed = totalPassed >= expectedTestCount && totalFailed === 0;
+  return [
+    {
+      id: "OQ-007",
+      description: `All ${expectedTestCount} expected tests pass`,
+      passed,
+      evidence: `${totalPassed} passed, ${totalFailed} failed`,
+      ...(!passed
+        ? {
+            errorMessage: `Expected ${expectedTestCount} passing tests, got ${totalPassed} passing and ${totalFailed} failing`,
+          }
+        : {}),
+    },
+  ];
 }
 
 // ---------------------------------------------------------------------------

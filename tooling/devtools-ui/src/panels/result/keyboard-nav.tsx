@@ -30,27 +30,39 @@ interface KeyboardNavigationHandlerProps {
   readonly onOpenSimulator?: () => void;
 }
 
+// ── Key Handlers ──────────────────────────────────────────────────────────
+
+type HandlerMap = Readonly<Record<string, (props: KeyboardNavigationHandlerProps) => void>>;
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const SIMPLE_KEY_HANDLERS: HandlerMap = {
+  Enter: p => p.onActivate?.(),
+  Escape: p => p.onEscape?.(),
+  " ": p => p.onTogglePlayback?.(),
+  ArrowLeft: p => p.onStepPrev?.(),
+  ArrowRight: p => p.onStepNext?.(),
+  ArrowUp: p => p.onStepUp?.(),
+  ArrowDown: p => p.onStepDown?.(),
+  "+": p => p.onZoomIn?.(),
+  "-": p => p.onZoomOut?.(),
+  f: p => p.onOpenFilter?.(),
+  "?": p => p.onToggleEducational?.(),
+  "/": p => p.onOpenSearch?.(),
+};
+/* eslint-enable @typescript-eslint/naming-convention */
+
+const VIEW_CONDITIONAL_KEY_HANDLERS: Readonly<
+  Record<string, { view: string; handler: (props: KeyboardNavigationHandlerProps) => void }>
+> = {
+  d: { view: "log", handler: p => p.onToggleDiff?.() },
+  s: { view: "cases", handler: p => p.onOpenSimulator?.() },
+};
+
 // ── Component ───────────────────────────────────────────────────────────────
 
-function KeyboardNavigationHandler({
-  activeView,
-  onViewSwitch,
-  onActivate,
-  onEscape,
-  onTogglePlayback,
-  onStepPrev,
-  onStepNext,
-  onStepUp,
-  onStepDown,
-  onZoomIn,
-  onZoomOut,
-  onFitToView,
-  onToggleDiff,
-  onOpenFilter,
-  onToggleEducational,
-  onOpenSearch,
-  onOpenSimulator,
-}: KeyboardNavigationHandlerProps): React.ReactElement {
+function KeyboardNavigationHandler(props: KeyboardNavigationHandlerProps): React.ReactElement {
+  const { activeView, onViewSwitch, onFitToView } = props;
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const { key } = e;
@@ -67,73 +79,21 @@ function KeyboardNavigationHandler({
         return;
       }
 
-      switch (key) {
-        case "Tab":
-          // Allow native Tab behavior; mark as handled for test verification
-          break;
-        case "Enter":
-          onActivate?.();
-          return;
-        case "Escape":
-          onEscape?.();
-          return;
-        case " ":
-          onTogglePlayback?.();
-          return;
-        case "ArrowLeft":
-          onStepPrev?.();
-          return;
-        case "ArrowRight":
-          onStepNext?.();
-          return;
-        case "ArrowUp":
-          onStepUp?.();
-          return;
-        case "ArrowDown":
-          onStepDown?.();
-          return;
-        case "+":
-          onZoomIn?.();
-          return;
-        case "-":
-          onZoomOut?.();
-          return;
-        case "d":
-          if (activeView === "log") onToggleDiff?.();
-          return;
-        case "f":
-          onOpenFilter?.();
-          return;
-        case "?":
-          onToggleEducational?.();
-          return;
-        case "/":
-          onOpenSearch?.();
-          return;
-        case "s":
-          if (activeView === "cases") onOpenSimulator?.();
-          return;
+      // Tab: allow native behavior
+      if (key === "Tab") return;
+
+      const simpleHandler = SIMPLE_KEY_HANDLERS[key];
+      if (simpleHandler !== undefined) {
+        simpleHandler(props);
+        return;
+      }
+
+      const conditional = VIEW_CONDITIONAL_KEY_HANDLERS[key];
+      if (conditional !== undefined && activeView === conditional.view) {
+        conditional.handler(props);
       }
     },
-    [
-      activeView,
-      onViewSwitch,
-      onActivate,
-      onEscape,
-      onTogglePlayback,
-      onStepPrev,
-      onStepNext,
-      onStepUp,
-      onStepDown,
-      onZoomIn,
-      onZoomOut,
-      onFitToView,
-      onToggleDiff,
-      onOpenFilter,
-      onToggleEducational,
-      onOpenSearch,
-      onOpenSimulator,
-    ]
+    [activeView, onViewSwitch, onFitToView, props]
   );
 
   return (

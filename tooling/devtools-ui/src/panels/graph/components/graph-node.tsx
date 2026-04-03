@@ -132,6 +132,103 @@ function getInheritanceModeColor(mode: string): string {
   }
 }
 
+function GraphNodeBadges({
+  node,
+  halfW,
+  halfH,
+  textStartX,
+}: {
+  readonly node: EnrichedGraphNode;
+  readonly halfW: number;
+  readonly halfH: number;
+  readonly textStartX: number;
+}): React.ReactElement {
+  return (
+    <>
+      {/* Async badge (lightning bolt) */}
+      {node.adapter.factoryKind === "async" && (
+        <text
+          x={halfW - 8}
+          y={-halfH + 14}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="var(--hex-info)"
+          fontSize="10"
+          aria-label="Async factory"
+        >
+          {"\u26A1"}
+        </text>
+      )}
+
+      {/* Error rate badge */}
+      {node.hasHighErrorRate && node.errorRate !== undefined && (
+        <g>
+          <circle cx={halfW - 14} cy={-halfH + 14} r={8} fill="var(--hex-error)" />
+          <text
+            x={halfW - 14}
+            y={-halfH + 15}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+            fontSize="7"
+            fontFamily="var(--hex-font-mono)"
+          >
+            {Math.round(node.errorRate * 100)}%
+          </text>
+        </g>
+      )}
+
+      {/* Override badge */}
+      {node.adapter.isOverride === true && (
+        <text
+          x={halfW - 14}
+          y={halfH - 10}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="var(--hex-warning)"
+          fontSize="8"
+          fontWeight="bold"
+          fontFamily="var(--hex-font-mono)"
+        >
+          OVR
+        </text>
+      )}
+
+      {/* Inheritance mode badge */}
+      {node.adapter.inheritanceMode !== undefined && (
+        <text
+          x={textStartX}
+          y={halfH - 10}
+          textAnchor="start"
+          dominantBaseline="central"
+          fill={getInheritanceModeColor(node.adapter.inheritanceMode)}
+          fontSize="8"
+          fontWeight="bold"
+          fontFamily="var(--hex-font-mono)"
+        >
+          {node.adapter.inheritanceMode === "shared"
+            ? "S"
+            : node.adapter.inheritanceMode === "forked"
+              ? "F"
+              : "I"}
+        </text>
+      )}
+
+      {/* Direction indicator */}
+      {node.direction === "inbound" && (
+        <text x={-halfW + 6} y={-halfH + 34} fill="var(--hex-text-muted)" fontSize="8">
+          {"\u25B6"}
+        </text>
+      )}
+      {node.direction === "outbound" && (
+        <text x={halfW - 10} y={-halfH + 34} fill="var(--hex-text-muted)" fontSize="8">
+          {"\u25C0"}
+        </text>
+      )}
+    </>
+  );
+}
+
 function GraphNode({
   node,
   isSelected,
@@ -268,86 +365,7 @@ function GraphNode({
       {/* Library logo (top-right) */}
       {getLibraryLogo(node.libraryKind, halfW - LOGO_SIZE / 2 - 2, -halfH + LOGO_SIZE / 2 + 4)}
 
-      {/* Async badge (lightning bolt) */}
-      {node.adapter.factoryKind === "async" && (
-        <text
-          x={halfW - 8}
-          y={-halfH + 14}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="var(--hex-info)"
-          fontSize="10"
-          aria-label="Async factory"
-        >
-          {"\u26A1"}
-        </text>
-      )}
-
-      {/* Error rate badge */}
-      {node.hasHighErrorRate && node.errorRate !== undefined && (
-        <g>
-          <circle cx={halfW - 14} cy={-halfH + 14} r={8} fill="var(--hex-error)" />
-          <text
-            x={halfW - 14}
-            y={-halfH + 15}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="white"
-            fontSize="7"
-            fontFamily="var(--hex-font-mono)"
-          >
-            {Math.round(node.errorRate * 100)}%
-          </text>
-        </g>
-      )}
-
-      {/* Override badge */}
-      {node.adapter.isOverride === true && (
-        <text
-          x={halfW - 14}
-          y={halfH - 10}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="var(--hex-warning)"
-          fontSize="8"
-          fontWeight="bold"
-          fontFamily="var(--hex-font-mono)"
-        >
-          OVR
-        </text>
-      )}
-
-      {/* Inheritance mode badge */}
-      {node.adapter.inheritanceMode !== undefined && (
-        <text
-          x={textStartX}
-          y={halfH - 10}
-          textAnchor="start"
-          dominantBaseline="central"
-          fill={getInheritanceModeColor(node.adapter.inheritanceMode)}
-          fontSize="8"
-          fontWeight="bold"
-          fontFamily="var(--hex-font-mono)"
-        >
-          {node.adapter.inheritanceMode === "shared"
-            ? "S"
-            : node.adapter.inheritanceMode === "forked"
-              ? "F"
-              : "I"}
-        </text>
-      )}
-
-      {/* Direction indicator */}
-      {node.direction === "inbound" && (
-        <text x={-halfW + 6} y={-halfH + 34} fill="var(--hex-text-muted)" fontSize="8">
-          {"\u25B6"}
-        </text>
-      )}
-      {node.direction === "outbound" && (
-        <text x={halfW - 10} y={-halfH + 34} fill="var(--hex-text-muted)" fontSize="8">
-          {"\u25C0"}
-        </text>
-      )}
+      <GraphNodeBadges node={node} halfW={halfW} halfH={halfH} textStartX={textStartX} />
 
       {/* Override double border effect */}
       {node.adapter.origin === "overridden" && !isSelected && (

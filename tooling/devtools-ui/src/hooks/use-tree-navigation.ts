@@ -8,6 +8,65 @@
 
 import { useCallback, useState } from "react";
 
+interface TreeKeyContext {
+  readonly visible: readonly string[];
+  readonly currentIndex: number;
+  readonly focusedId: string;
+  readonly expandedIds: ReadonlySet<string>;
+  readonly setFocusedState: (id: string) => void;
+  readonly toggleExpanded: (id: string) => void;
+  readonly getChildren: (id: string) => readonly string[];
+  readonly getParent: (id: string) => string | undefined;
+}
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const treeKeyHandlers: Record<string, (ctx: TreeKeyContext) => void> = {
+  ArrowDown({ visible, currentIndex, setFocusedState }) {
+    if (currentIndex < visible.length - 1) {
+      setFocusedState(visible[currentIndex + 1]);
+    }
+  },
+  ArrowUp({ visible, currentIndex, setFocusedState }) {
+    if (currentIndex > 0) {
+      setFocusedState(visible[currentIndex - 1]);
+    }
+  },
+  ArrowRight({ focusedId, expandedIds, setFocusedState, toggleExpanded, getChildren }) {
+    const children = getChildren(focusedId);
+    if (children.length > 0) {
+      if (!expandedIds.has(focusedId)) {
+        toggleExpanded(focusedId);
+      } else {
+        setFocusedState(children[0]);
+      }
+    }
+  },
+  ArrowLeft({ focusedId, expandedIds, setFocusedState, toggleExpanded, getParent }) {
+    if (expandedIds.has(focusedId)) {
+      toggleExpanded(focusedId);
+    } else {
+      const parentId = getParent(focusedId);
+      if (parentId !== undefined) {
+        setFocusedState(parentId);
+      }
+    }
+  },
+  Enter({ focusedId, toggleExpanded }) {
+    toggleExpanded(focusedId);
+  },
+  Home({ visible, setFocusedState }) {
+    if (visible.length > 0) {
+      setFocusedState(visible[0]);
+    }
+  },
+  End({ visible, setFocusedState }) {
+    if (visible.length > 0) {
+      setFocusedState(visible[visible.length - 1]);
+    }
+  },
+};
+/* eslint-enable @typescript-eslint/naming-convention */
+
 interface TreeNavigationState {
   readonly focusedId: string;
   readonly expandedIds: ReadonlySet<string>;
@@ -69,68 +128,22 @@ export function useTreeNavigation(
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
+      const handler = treeKeyHandlers[event.key];
+      if (handler === undefined) return;
+
+      event.preventDefault();
       const visible = getVisibleNodes();
       const currentIndex = visible.indexOf(focusedId);
-
-      switch (event.key) {
-        case "ArrowDown": {
-          event.preventDefault();
-          if (currentIndex < visible.length - 1) {
-            setFocusedState(visible[currentIndex + 1]);
-          }
-          break;
-        }
-        case "ArrowUp": {
-          event.preventDefault();
-          if (currentIndex > 0) {
-            setFocusedState(visible[currentIndex - 1]);
-          }
-          break;
-        }
-        case "ArrowRight": {
-          event.preventDefault();
-          const children = getChildren(focusedId);
-          if (children.length > 0) {
-            if (!expandedIds.has(focusedId)) {
-              toggleExpanded(focusedId);
-            } else {
-              setFocusedState(children[0]);
-            }
-          }
-          break;
-        }
-        case "ArrowLeft": {
-          event.preventDefault();
-          if (expandedIds.has(focusedId)) {
-            toggleExpanded(focusedId);
-          } else {
-            const parentId = getParent(focusedId);
-            if (parentId !== undefined) {
-              setFocusedState(parentId);
-            }
-          }
-          break;
-        }
-        case "Enter": {
-          event.preventDefault();
-          toggleExpanded(focusedId);
-          break;
-        }
-        case "Home": {
-          event.preventDefault();
-          if (visible.length > 0) {
-            setFocusedState(visible[0]);
-          }
-          break;
-        }
-        case "End": {
-          event.preventDefault();
-          if (visible.length > 0) {
-            setFocusedState(visible[visible.length - 1]);
-          }
-          break;
-        }
-      }
+      handler({
+        visible,
+        currentIndex,
+        focusedId,
+        expandedIds,
+        setFocusedState,
+        toggleExpanded,
+        getChildren,
+        getParent,
+      });
     },
     [focusedId, expandedIds, getChildren, getParent, getVisibleNodes, toggleExpanded]
   );

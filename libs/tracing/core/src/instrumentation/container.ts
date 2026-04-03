@@ -26,6 +26,28 @@ import { warnTracingDisabled } from "../utils/tracing-warnings.js";
  */
 const installedCleanups = new WeakMap<HookableContainer, () => void>();
 
+interface ResolvedInstrumentOptions {
+  readonly traceSyncResolutions: boolean;
+  readonly traceAsyncResolutions: boolean;
+  readonly traceCachedResolutions: boolean;
+  readonly portFilter: AutoInstrumentOptions["portFilter"];
+  readonly additionalAttributes: Record<string, string>;
+  readonly minDurationMs: number;
+  readonly includeStackTrace: boolean;
+}
+
+function resolveOptions(options?: AutoInstrumentOptions): ResolvedInstrumentOptions {
+  return {
+    traceSyncResolutions: options?.traceSyncResolutions ?? true,
+    traceAsyncResolutions: options?.traceAsyncResolutions ?? true,
+    traceCachedResolutions: options?.traceCachedResolutions ?? true,
+    portFilter: options?.portFilter,
+    additionalAttributes: options?.additionalAttributes ?? {},
+    minDurationMs: options?.minDurationMs ?? 0,
+    includeStackTrace: options?.includeStackTrace ?? false,
+  };
+}
+
 /**
  * Instruments a container with distributed tracing hooks.
  *
@@ -109,16 +131,7 @@ export function instrumentContainer(
     existingCleanup();
   }
 
-  // Merge with defaults
-  const opts = {
-    traceSyncResolutions: options?.traceSyncResolutions ?? true,
-    traceAsyncResolutions: options?.traceAsyncResolutions ?? true,
-    traceCachedResolutions: options?.traceCachedResolutions ?? true,
-    portFilter: options?.portFilter,
-    additionalAttributes: options?.additionalAttributes ?? {},
-    minDurationMs: options?.minDurationMs ?? 0,
-    includeStackTrace: options?.includeStackTrace ?? false,
-  };
+  const opts = resolveOptions(options);
 
   /**
    * Determines whether a resolution should be traced based on options.

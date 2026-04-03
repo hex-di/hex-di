@@ -136,27 +136,22 @@ const filterPredicates = {
  * In "or" mode, at least one active predicate must match
  * (search text is always AND-ed regardless of compound mode).
  */
-function matchesFilter(node: EnrichedGraphNode, filter: GraphFilterState): boolean {
-  // Search text is always AND-ed
-  if (!matchesSearchText(node, filter.searchText)) return false;
+function matchesAllDimensions(node: EnrichedGraphNode, filter: GraphFilterState): boolean {
+  return (
+    matchesLifetime(node, filter.lifetimes) &&
+    matchesOrigin(node, filter.origins) &&
+    matchesLibraryKind(node, filter.libraryKinds) &&
+    matchesCategory(node, filter.category) &&
+    matchesTags(node, filter.tags, filter.tagMode) &&
+    matchesDirection(node, filter.direction) &&
+    matchesMinErrorRate(node, filter.minErrorRate) &&
+    matchesInheritanceMode(node, filter.inheritanceModes) &&
+    matchesResolutionStatus(node, filter.resolutionStatus)
+  );
+}
 
-  if (filter.compoundMode === "and") {
-    return (
-      matchesLifetime(node, filter.lifetimes) &&
-      matchesOrigin(node, filter.origins) &&
-      matchesLibraryKind(node, filter.libraryKinds) &&
-      matchesCategory(node, filter.category) &&
-      matchesTags(node, filter.tags, filter.tagMode) &&
-      matchesDirection(node, filter.direction) &&
-      matchesMinErrorRate(node, filter.minErrorRate) &&
-      matchesInheritanceMode(node, filter.inheritanceModes) &&
-      matchesResolutionStatus(node, filter.resolutionStatus)
-    );
-  }
-
-  // "or" mode — at least one active dimension must match
+function collectActiveChecks(node: EnrichedGraphNode, filter: GraphFilterState): boolean[] {
   const checks: boolean[] = [];
-
   if (filter.lifetimes.size > 0) checks.push(matchesLifetime(node, filter.lifetimes));
   if (filter.origins.size > 0) checks.push(matchesOrigin(node, filter.origins));
   if (filter.libraryKinds.size > 0) checks.push(matchesLibraryKind(node, filter.libraryKinds));
@@ -168,10 +163,20 @@ function matchesFilter(node: EnrichedGraphNode, filter: GraphFilterState): boole
     checks.push(matchesInheritanceMode(node, filter.inheritanceModes));
   if (filter.resolutionStatus !== "all")
     checks.push(matchesResolutionStatus(node, filter.resolutionStatus));
+  return checks;
+}
 
-  // If no dimension is active, pass everything
+function matchesFilter(node: EnrichedGraphNode, filter: GraphFilterState): boolean {
+  // Search text is always AND-ed
+  if (!matchesSearchText(node, filter.searchText)) return false;
+
+  if (filter.compoundMode === "and") {
+    return matchesAllDimensions(node, filter);
+  }
+
+  // "or" mode — at least one active dimension must match
+  const checks = collectActiveChecks(node, filter);
   if (checks.length === 0) return true;
-
   return checks.some(Boolean);
 }
 

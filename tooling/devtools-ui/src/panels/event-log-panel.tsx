@@ -37,10 +37,14 @@ function getEventColor(type: string): string {
 /**
  * Returns a single-line summary for an event.
  */
-function getEventSummary(event: InspectorEvent): string {
+function getResolutionSummary(event: InspectorEvent & { type: "resolution" }): string {
+  return `${event.portName} (${event.duration.toFixed(1)}ms)${event.isCacheHit ? " [cache]" : ""}`;
+}
+
+function getEventSummaryByType(event: InspectorEvent): string | undefined {
   switch (event.type) {
     case "resolution":
-      return `${event.portName} (${event.duration.toFixed(1)}ms)${event.isCacheHit ? " [cache]" : ""}`;
+      return getResolutionSummary(event);
     case "result:ok":
       return event.portName;
     case "result:err":
@@ -56,7 +60,6 @@ function getEventSummary(event: InspectorEvent): string {
     case "library":
       return `${event.event.source}: ${event.event.type}`;
     case "library-registered":
-      return event.name;
     case "library-unregistered":
       return event.name;
     case "init-progress":
@@ -65,6 +68,13 @@ function getEventSummary(event: InspectorEvent): string {
       return `${event.childId} (${event.childKind})`;
     case "child-disposed":
       return event.childId;
+    default:
+      return undefined;
+  }
+}
+
+function getEventSummaryExtended(event: InspectorEvent): string {
+  switch (event.type) {
     case "result:recovered":
       return `${event.portName} recovered from ${event.fromCode}`;
     case "chain-registered":
@@ -77,7 +87,13 @@ function getEventSummary(event: InspectorEvent): string {
       return `${event.portName}/${event.executionId}`;
     case "guard-role-hierarchy-updated":
       return "Role hierarchy updated";
+    default:
+      return "";
   }
+}
+
+function getEventSummary(event: InspectorEvent): string {
+  return getEventSummaryByType(event) ?? getEventSummaryExtended(event);
 }
 
 interface EventRowProps {

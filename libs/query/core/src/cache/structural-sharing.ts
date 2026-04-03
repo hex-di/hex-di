@@ -30,6 +30,43 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * Returns `prev` (by reference) for any sub-tree that is structurally equal,
  * and `next` values only where changes exist.
  */
+function replaceEqualDeepArray<T>(prev: T & unknown[], next: unknown[]): T {
+  const result = next.map((item: unknown, i: number) =>
+    i < prev.length ? replaceEqualDeep(prev[i], item) : item
+  );
+  if (result.length === prev.length && result.every((item, i) => item === prev[i])) {
+    return prev;
+  }
+  // GENERIC_BOUNDARY: structural sharing preserves T shape by construction
+  return coercePreservedStructure<T>(result);
+}
+
+function replaceEqualDeepObject<T>(
+  prev: Record<string, unknown>,
+  next: Record<string, unknown>
+): T | Record<string, unknown> {
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+
+  // Quick check: if key counts differ, they're different
+  let allEqual = prevKeys.length === nextKeys.length;
+
+  const result: Record<string, unknown> = {};
+  for (const key of nextKeys) {
+    if (key in prev) {
+      result[key] = replaceEqualDeep(prev[key], next[key]);
+      if (result[key] !== prev[key]) {
+        allEqual = false;
+      }
+    } else {
+      result[key] = next[key];
+      allEqual = false;
+    }
+  }
+
+  return allEqual ? prev : result;
+}
+
 export function replaceEqualDeep<T>(prev: T, next: T): T {
   // Referential equality -- nothing to do
   if (prev === next) return prev;
@@ -41,41 +78,13 @@ export function replaceEqualDeep<T>(prev: T, next: T): T {
 
   // Both arrays
   if (Array.isArray(prev) && Array.isArray(next)) {
-    const prevArr: unknown[] = prev;
-    const result = next.map((item: unknown, i: number) =>
-      i < prevArr.length ? replaceEqualDeep(prevArr[i], item) : item
-    );
-    if (result.length === prevArr.length && result.every((item, i) => item === prevArr[i])) {
-      return prev;
-    }
-    // GENERIC_BOUNDARY: structural sharing preserves T shape by construction
-    return coercePreservedStructure<T>(result);
+    return replaceEqualDeepArray<T>(prev, next);
   }
 
   // Both plain objects
   if (isPlainObject(prev) && isPlainObject(next)) {
-    const prevKeys = Object.keys(prev);
-    const nextKeys = Object.keys(next);
-
-    // Quick check: if key counts differ, they're different
-    let allEqual = prevKeys.length === nextKeys.length;
-
-    const result: Record<string, unknown> = {};
-    for (const key of nextKeys) {
-      if (key in prev) {
-        result[key] = replaceEqualDeep(prev[key], next[key]);
-        if (result[key] !== prev[key]) {
-          allEqual = false;
-        }
-      } else {
-        result[key] = next[key];
-        allEqual = false;
-      }
-    }
-
-    if (allEqual) {
-      return prev;
-    }
+    const result = replaceEqualDeepObject<T>(prev, next);
+    if (result === prev) return prev;
     // GENERIC_BOUNDARY: structural sharing preserves T shape by construction
     return coercePreservedStructure<T>(result);
   }

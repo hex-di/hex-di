@@ -64,6 +64,67 @@ function findParentKey<T>(
   return walk(root, undefined);
 }
 
+interface TreeRendererKeyContext<T> {
+  readonly visibleKeys: string[];
+  readonly currentIndex: number;
+  readonly focusedKey: string;
+  readonly expandedKeys: ReadonlySet<string>;
+  readonly setFocusedKey: (key: string) => void;
+  readonly toggleExpanded: (key: string) => void;
+  readonly onSelect: ((key: string) => void) | undefined;
+  readonly root: T;
+  readonly getChildren: (node: T) => readonly T[];
+  readonly getKey: (node: T) => string;
+}
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const treeRendererKeyHandlers: Record<string, <T>(ctx: TreeRendererKeyContext<T>) => void> = {
+  "focus-next"({ visibleKeys, currentIndex, setFocusedKey }) {
+    if (currentIndex < visibleKeys.length - 1) {
+      setFocusedKey(visibleKeys[currentIndex + 1]);
+    }
+  },
+  "focus-prev"({ visibleKeys, currentIndex, setFocusedKey }) {
+    if (currentIndex > 0) {
+      setFocusedKey(visibleKeys[currentIndex - 1]);
+    }
+  },
+  expand({ focusedKey, expandedKeys, toggleExpanded, setFocusedKey, visibleKeys, currentIndex }) {
+    if (!expandedKeys.has(focusedKey)) {
+      toggleExpanded(focusedKey);
+    } else {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < visibleKeys.length) {
+        setFocusedKey(visibleKeys[nextIndex]);
+      }
+    }
+  },
+  collapse({ focusedKey, expandedKeys, toggleExpanded, setFocusedKey, root, getChildren, getKey }) {
+    if (expandedKeys.has(focusedKey)) {
+      toggleExpanded(focusedKey);
+    } else {
+      const parentKey = findParentKey(root, focusedKey, getChildren, getKey);
+      if (parentKey !== undefined) {
+        setFocusedKey(parentKey);
+      }
+    }
+  },
+  select({ focusedKey, onSelect }) {
+    onSelect?.(focusedKey);
+  },
+  "focus-first"({ visibleKeys, setFocusedKey }) {
+    if (visibleKeys.length > 0) {
+      setFocusedKey(visibleKeys[0]);
+    }
+  },
+  "focus-last"({ visibleKeys, setFocusedKey }) {
+    if (visibleKeys.length > 0) {
+      setFocusedKey(visibleKeys[visibleKeys.length - 1]);
+    }
+  },
+};
+/* eslint-enable @typescript-eslint/naming-convention */
+
 /**
  * TreeRenderer renders hierarchical data with expand/collapse and keyboard nav.
  */
@@ -112,59 +173,20 @@ function TreeRenderer<T>({
       const visibleKeys = collectVisibleKeys(root, getChildren, getKey, expandedKeys);
       const currentIndex = visibleKeys.indexOf(focusedKey);
 
-      switch (action.type) {
-        case "focus-next": {
-          if (currentIndex < visibleKeys.length - 1) {
-            setFocusedKey(visibleKeys[currentIndex + 1]);
-          }
-          break;
-        }
-        case "focus-prev": {
-          if (currentIndex > 0) {
-            setFocusedKey(visibleKeys[currentIndex - 1]);
-          }
-          break;
-        }
-        case "expand": {
-          if (!expandedKeys.has(focusedKey)) {
-            toggleExpanded(focusedKey);
-          } else {
-            // Move to first child if expanded
-            const nextIndex = currentIndex + 1;
-            if (nextIndex < visibleKeys.length) {
-              setFocusedKey(visibleKeys[nextIndex]);
-            }
-          }
-          break;
-        }
-        case "collapse": {
-          if (expandedKeys.has(focusedKey)) {
-            toggleExpanded(focusedKey);
-          } else {
-            // Move to parent
-            const parentKey = findParentKey(root, focusedKey, getChildren, getKey);
-            if (parentKey !== undefined) {
-              setFocusedKey(parentKey);
-            }
-          }
-          break;
-        }
-        case "select": {
-          onSelect?.(focusedKey);
-          break;
-        }
-        case "focus-first": {
-          if (visibleKeys.length > 0) {
-            setFocusedKey(visibleKeys[0]);
-          }
-          break;
-        }
-        case "focus-last": {
-          if (visibleKeys.length > 0) {
-            setFocusedKey(visibleKeys[visibleKeys.length - 1]);
-          }
-          break;
-        }
+      const handler = treeRendererKeyHandlers[action.type];
+      if (handler !== undefined) {
+        handler({
+          visibleKeys,
+          currentIndex,
+          focusedKey,
+          expandedKeys,
+          setFocusedKey,
+          toggleExpanded,
+          onSelect,
+          root,
+          getChildren,
+          getKey,
+        });
       }
     },
     [root, getChildren, getKey, expandedKeys, focusedKey, onSelect, toggleExpanded]

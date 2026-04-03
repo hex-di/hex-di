@@ -14,13 +14,29 @@ interface MetadataInspectorPanelProps {
   readonly onClose: () => void;
 }
 
+function partitionMetadata(metadata: Record<string, unknown> | undefined): {
+  libraryMeta: Record<string, unknown>;
+  customMeta: Record<string, unknown>;
+} {
+  const libraryMeta: Record<string, unknown> = {};
+  const customMeta: Record<string, unknown> = {};
+  if (metadata !== undefined) {
+    for (const [key, value] of Object.entries(metadata)) {
+      if (key.startsWith("__hex_")) {
+        libraryMeta[key] = value;
+      } else {
+        customMeta[key] = value;
+      }
+    }
+  }
+  return { libraryMeta, customMeta };
+}
+
 function MetadataInspectorPanel({
   node,
   isOpen,
   onClose,
 }: MetadataInspectorPanelProps): React.ReactElement | null {
-  if (!isOpen || node === undefined) return null;
-
   const [expanded, setExpanded] = useState<ReadonlySet<MetadataSection>>(
     new Set(["port", "adapter"])
   );
@@ -37,21 +53,10 @@ function MetadataInspectorPanel({
     });
   }, []);
 
-  const adapter = node.adapter;
-  const metadata = adapter.metadata;
+  if (!isOpen || node === undefined) return null;
 
-  // Extract library-specific metadata
-  const libraryMeta: Record<string, unknown> = {};
-  const customMeta: Record<string, unknown> = {};
-  if (metadata !== undefined) {
-    for (const [key, value] of Object.entries(metadata)) {
-      if (key.startsWith("__hex_")) {
-        libraryMeta[key] = value;
-      } else {
-        customMeta[key] = value;
-      }
-    }
-  }
+  const adapter = node.adapter;
+  const { libraryMeta, customMeta } = partitionMetadata(adapter.metadata);
 
   return (
     <div

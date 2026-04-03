@@ -47,37 +47,34 @@ import { buildDependencyMap } from "./traversal.js";
  * }
  * ```
  */
-export function computeInitializationOrder(
-  adapters: readonly AdapterConstraint[]
-): readonly (readonly string[])[] | null {
-  if (adapters.length === 0) {
-    return Object.freeze([]);
-  }
+interface KahnState {
+  readonly inDegree: Map<string, number>;
+  readonly adjList: Map<string, string[]>;
+  readonly registrationIndex: Map<string, number>;
+}
 
-  const depMap = buildDependencyMap(adapters);
+function buildKahnState(
+  adapters: readonly AdapterConstraint[],
+  depMap: Readonly<Record<string, readonly string[]>>
+): KahnState {
   const portNames = Object.keys(depMap);
   const portSet = new Set(portNames);
 
-  // Build registration index map for stable tie-breaking
   const registrationIndex = new Map<string, number>();
   for (let i = 0; i < adapters.length; i++) {
     registrationIndex.set(adapters[i].provides.__portName, i);
   }
 
-  // Kahn's algorithm with level tracking
   const inDegree = new Map<string, number>();
   const adjList = new Map<string, string[]>();
 
-  // Initialize structures
   for (const portName of portNames) {
     inDegree.set(portName, 0);
     adjList.set(portName, []);
   }
 
-  // Build reverse adjacency and in-degree counts
   for (const [portName, deps] of Object.entries(depMap)) {
     for (const dep of deps) {
-      // Only count internal dependencies
       if (portSet.has(dep)) {
         adjList.get(dep)?.push(portName);
         inDegree.set(portName, (inDegree.get(portName) ?? 0) + 1);
@@ -85,45 +82,50 @@ export function computeInitializationOrder(
     }
   }
 
-  // Collect initial sources (in-degree 0), sorted by registration index
-  let currentSources: string[] = [];
-  for (const [portName, degree] of inDegree) {
-    if (degree === 0) {
-      currentSources.push(portName);
-    }
-  }
-  currentSources.sort((a, b) => (registrationIndex.get(a) ?? 0) - (registrationIndex.get(b) ?? 0));
+  return { inDegree, adjList, registrationIndex };
+}
 
+function collectSources(
+  inDegree: Map<string, number>,
+  registrationIndex: Map<string, number>
+): string[] {
+  const sources: string[] = [];
+  for (const [portName, degree] of inDegree) {
+    if (degree === 0) sources.push(portName);
+  }
+  sources.sort((a, b) => (registrationIndex.get(a) ?? 0) - (registrationIndex.get(b) ?? 0));
+  return sources;
+}
+
+export function computeInitializationOrder(
+  adapters: readonly AdapterConstraint[]
+): readonly (readonly string[])[] | null {
+  if (adapters.length === 0) return Object.freeze([]);
+
+  const depMap = buildDependencyMap(adapters);
+  const { inDegree, adjList, registrationIndex } = buildKahnState(adapters, depMap);
+
+  let currentSources = collectSources(inDegree, registrationIndex);
   const result: (readonly string[])[] = [];
   let processedCount = 0;
 
   while (currentSources.length > 0) {
-    // Freeze the current level (already sorted by registration index)
     result.push(Object.freeze([...currentSources]));
     processedCount += currentSources.length;
 
-    // Compute next level's sources
     const nextSources: string[] = [];
     for (const current of currentSources) {
       for (const dependent of adjList.get(current) ?? []) {
         const newDegree = (inDegree.get(dependent) ?? 0) - 1;
         inDegree.set(dependent, newDegree);
-        if (newDegree === 0) {
-          nextSources.push(dependent);
-        }
+        if (newDegree === 0) nextSources.push(dependent);
       }
     }
 
-    // Sort next sources by registration index for stable ordering
     nextSources.sort((a, b) => (registrationIndex.get(a) ?? 0) - (registrationIndex.get(b) ?? 0));
-
     currentSources = nextSources;
   }
 
-  // If we couldn't process all ports, there's a cycle
-  if (processedCount !== portNames.length) {
-    return null;
-  }
-
+  if (processedCount !== Object.keys(depMap).length) return null;
   return Object.freeze(result);
 }

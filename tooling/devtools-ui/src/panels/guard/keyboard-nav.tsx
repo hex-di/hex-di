@@ -46,6 +46,20 @@ type GuardKeyboardAction =
   | { readonly type: "zoom-out" }
   | { readonly type: "fit-to-view" };
 
+const GUARD_KEY_ACTION_MAP: Record<string, GuardKeyboardAction["type"]> = {
+  Enter: "activate",
+  Escape: "escape",
+  "?": "toggle-educational",
+  "/": "open-search",
+  f: "open-filter",
+  ArrowUp: "navigate-up",
+  ArrowDown: "navigate-down",
+  ArrowLeft: "navigate-left",
+  ArrowRight: "navigate-right",
+  "+": "zoom-in",
+  "-": "zoom-out",
+};
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 function GuardKeyboardNav({
@@ -72,40 +86,9 @@ function GuardKeyboardNav({
         return;
       }
 
-      switch (key) {
-        case "Enter":
-          onAction({ type: "activate" });
-          return;
-        case "Escape":
-          onAction({ type: "escape" });
-          return;
-        case "?":
-          onAction({ type: "toggle-educational" });
-          return;
-        case "/":
-          onAction({ type: "open-search" });
-          return;
-        case "f":
-          onAction({ type: "open-filter" });
-          return;
-        case "ArrowUp":
-          onAction({ type: "navigate-up" });
-          return;
-        case "ArrowDown":
-          onAction({ type: "navigate-down" });
-          return;
-        case "ArrowLeft":
-          onAction({ type: "navigate-left" });
-          return;
-        case "ArrowRight":
-          onAction({ type: "navigate-right" });
-          return;
-        case "+":
-          onAction({ type: "zoom-in" });
-          return;
-        case "-":
-          onAction({ type: "zoom-out" });
-          return;
+      const actionType = GUARD_KEY_ACTION_MAP[key];
+      if (actionType !== undefined) {
+        onAction({ type: actionType });
       }
     },
     [onAction]

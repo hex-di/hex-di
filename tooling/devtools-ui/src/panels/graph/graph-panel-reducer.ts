@@ -56,70 +56,63 @@ function mergeFilter(
 /**
  * Pure reducer for GraphPanelState.
  */
-function graphPanelReducer(state: GraphPanelState, action: GraphPanelAction): GraphPanelState {
+function handleToggleMultiSelect(state: GraphPanelState, portName: string): GraphPanelState {
+  const next = new Set(state.selectedNodes);
+  if (next.has(portName)) {
+    next.delete(portName);
+  } else {
+    next.add(portName);
+  }
+  return { ...state, selectedNodes: next };
+}
+
+function handleSimpleActions(
+  state: GraphPanelState,
+  action: GraphPanelAction
+): GraphPanelState | undefined {
   switch (action.type) {
-    case "SELECT_NODE":
-      return {
-        ...state,
-        selectedNodes: new Set([action.portName]),
-        blastRadius: undefined,
-      };
-
-    case "TOGGLE_MULTI_SELECT": {
-      const next = new Set(state.selectedNodes);
-      if (next.has(action.portName)) {
-        next.delete(action.portName);
-      } else {
-        next.add(action.portName);
-      }
-      return {
-        ...state,
-        selectedNodes: next,
-      };
-    }
-
-    case "CLEAR_SELECTION":
-      return {
-        ...state,
-        selectedNodes: new Set(),
-        blastRadius: undefined,
-      };
-
     case "SET_HOVERED":
       return { ...state, hoveredNode: action.portName };
-
     case "SET_VIEWPORT":
       return { ...state, viewport: action.viewport };
+    case "TOGGLE_ANALYSIS":
+      return { ...state, analysisSidebarOpen: !state.analysisSidebarOpen };
+    case "TOGGLE_METADATA":
+      return { ...state, metadataInspectorOpen: !state.metadataInspectorOpen };
+    case "TOGGLE_FILTER_PANEL":
+      return { ...state, filterPanelOpen: !state.filterPanelOpen };
+    case "SET_LAYOUT_DIRECTION":
+      return { ...state, layoutDirection: action.direction };
+    case "TOGGLE_MINIMAP":
+      return { ...state, minimapVisible: !state.minimapVisible };
+    case "SET_BLAST_RADIUS":
+      return { ...state, blastRadius: action.portName };
+    case "SET_ACTIVE_PRESET":
+      return { ...state, activePreset: action.preset };
+    default:
+      return undefined;
+  }
+}
 
+function graphPanelReducer(state: GraphPanelState, action: GraphPanelAction): GraphPanelState {
+  const simple = handleSimpleActions(state, action);
+  if (simple !== undefined) return simple;
+
+  switch (action.type) {
+    case "SELECT_NODE":
+      return { ...state, selectedNodes: new Set([action.portName]), blastRadius: undefined };
+    case "TOGGLE_MULTI_SELECT":
+      return handleToggleMultiSelect(state, action.portName);
+    case "CLEAR_SELECTION":
+      return { ...state, selectedNodes: new Set(), blastRadius: undefined };
     case "SET_FILTER":
       return {
         ...state,
         filter: mergeFilter(state.filter, action.filter),
         activePreset: undefined,
       };
-
     case "RESET_FILTER":
-      return {
-        ...state,
-        filter: DEFAULT_FILTER_STATE,
-        activePreset: undefined,
-      };
-
-    case "TOGGLE_ANALYSIS":
-      return { ...state, analysisSidebarOpen: !state.analysisSidebarOpen };
-
-    case "TOGGLE_METADATA":
-      return { ...state, metadataInspectorOpen: !state.metadataInspectorOpen };
-
-    case "TOGGLE_FILTER_PANEL":
-      return { ...state, filterPanelOpen: !state.filterPanelOpen };
-
-    case "SET_LAYOUT_DIRECTION":
-      return { ...state, layoutDirection: action.direction };
-
-    case "TOGGLE_MINIMAP":
-      return { ...state, minimapVisible: !state.minimapVisible };
-
+      return { ...state, filter: DEFAULT_FILTER_STATE, activePreset: undefined };
     case "SET_CONTAINER":
       return {
         ...state,
@@ -128,12 +121,8 @@ function graphPanelReducer(state: GraphPanelState, action: GraphPanelAction): Gr
         hoveredNode: undefined,
         blastRadius: undefined,
       };
-
-    case "SET_BLAST_RADIUS":
-      return { ...state, blastRadius: action.portName };
-
-    case "SET_ACTIVE_PRESET":
-      return { ...state, activePreset: action.preset };
+    default:
+      return state;
   }
 }
 

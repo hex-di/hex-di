@@ -36,44 +36,17 @@ function propertyValue(obj: object, key: string): unknown {
   return desc !== undefined ? desc.value : undefined;
 }
 
-export function shallowEqual<T>(a: T, b: T): boolean {
-  // Strict equality check handles primitives and same references
-  if (Object.is(a, b)) {
-    return true;
+function arraysEqual(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (!Object.is(a[i], b[i])) return false;
   }
+  return true;
+}
 
-  // If either is not an object or is null, they're not equal (already checked above)
-  if (typeof a !== "object" || a === null || typeof b !== "object" || b === null) {
-    return false;
-  }
-
-  // Handle arrays
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) {
-      return false;
-    }
-    for (let i = 0; i < a.length; i++) {
-      if (!Object.is(a[i], b[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // If only one is an array, they're not equal
-  if (Array.isArray(a) || Array.isArray(b)) {
-    return false;
-  }
-
-  // Compare object keys and values
+function objectsEqual(a: object, b: object): boolean {
   const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-
-  if (keysA.length !== keysB.length) {
-    return false;
-  }
-
-  // Check all keys from a exist in b with same values
+  if (keysA.length !== Object.keys(b).length) return false;
   for (const key of keysA) {
     if (
       !Object.prototype.hasOwnProperty.call(b, key) ||
@@ -82,6 +55,17 @@ export function shallowEqual<T>(a: T, b: T): boolean {
       return false;
     }
   }
-
   return true;
+}
+
+export function shallowEqual<T>(a: T, b: T): boolean {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== "object" || a === null || typeof b !== "object" || b === null) return false;
+
+  const aIsArray = Array.isArray(a);
+  const bIsArray = Array.isArray(b);
+  if (aIsArray !== bIsArray) return false;
+  if (aIsArray && bIsArray) return arraysEqual(a, b);
+
+  return objectsEqual(a, b);
 }

@@ -88,33 +88,22 @@ const VIEW_IDS = ["railway", "log", "cases", "sankey", "waterfall", "combinator"
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-function AccessibleResultPanel({
-  activeView,
-  chainLabel,
-  executionId,
-  operations,
-  paths,
-  selectedChainLabel,
-  chainOkRate,
-  chainRunCount,
-  selectedStep,
-  switchEvent,
-  filterAnnouncement,
-  playbackAnnouncement,
-  connectionAnnouncement,
-  durationEntries,
-  stabilityEntries,
-  onFocusDetail,
-  onRestoreFocus,
-  onViewFocus,
-}: AccessibleResultPanelProps): React.ReactElement {
+function useAccessibilityAnnouncements(props: AccessibleResultPanelProps): string {
+  const {
+    activeView,
+    selectedChainLabel,
+    chainOkRate,
+    chainRunCount,
+    selectedStep,
+    switchEvent,
+    filterAnnouncement,
+    playbackAnnouncement,
+    connectionAnnouncement,
+    onViewFocus,
+  } = props;
   const [announcement, setAnnouncement] = useState("");
   const prevViewRef = useRef(activeView);
 
-  const reducedMotion =
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // Announce view switch
   useEffect(() => {
     if (prevViewRef.current !== activeView) {
       const label = VIEW_LABELS[activeView] ?? activeView;
@@ -124,7 +113,6 @@ function AccessibleResultPanel({
     }
   }, [activeView, onViewFocus]);
 
-  // Announce chain selection
   useEffect(() => {
     if (selectedChainLabel) {
       setAnnouncement(
@@ -133,7 +121,6 @@ function AccessibleResultPanel({
     }
   }, [selectedChainLabel, chainOkRate, chainRunCount]);
 
-  // Announce step selection
   useEffect(() => {
     if (selectedStep) {
       setAnnouncement(
@@ -142,7 +129,6 @@ function AccessibleResultPanel({
     }
   }, [selectedStep]);
 
-  // Announce switch detection
   useEffect(() => {
     if (switchEvent) {
       setAnnouncement(
@@ -151,28 +137,140 @@ function AccessibleResultPanel({
     }
   }, [switchEvent]);
 
-  // Announce filter
   useEffect(() => {
     if (filterAnnouncement) setAnnouncement(filterAnnouncement);
   }, [filterAnnouncement]);
 
-  // Announce playback
   useEffect(() => {
     if (playbackAnnouncement) setAnnouncement(playbackAnnouncement);
   }, [playbackAnnouncement]);
 
-  // Announce connection
   useEffect(() => {
     if (connectionAnnouncement) setAnnouncement(connectionAnnouncement);
   }, [connectionAnnouncement]);
+
+  return announcement;
+}
+
+function AccessibleRailwayView({
+  chainLabel,
+  operations,
+  onFocusDetail,
+}: {
+  readonly chainLabel?: string;
+  readonly operations?: readonly OperationEntry[];
+  readonly onFocusDetail?: () => void;
+}): React.ReactElement {
+  const hasSwitchOp = operations?.some(op => op.inputTrack !== op.outputTrack);
+  return (
+    <>
+      <svg
+        data-testid="railway-svg"
+        role="img"
+        aria-label={`Railway pipeline for ${chainLabel ?? "chain"}`}
+      >
+        {operations?.map((op, i) => (
+          <g
+            key={i}
+            data-testid={`operation-node-${i}`}
+            role="button"
+            aria-label={`${op.method}(${op.label}), ${op.inputTrack} to ${op.outputTrack}, ${op.duration}`}
+          />
+        ))}
+      </svg>
+      {operations && operations.length > 0 && (
+        <>
+          <span data-testid="track-indicator-ok" data-shape="filled">
+            Ok
+          </span>
+          {operations.some(op => op.outputTrack === "err") && (
+            <span data-testid="track-indicator-err" data-shape="empty">
+              Err
+            </span>
+          )}
+        </>
+      )}
+      {hasSwitchOp && <span data-testid="switch-indicator">switched</span>}
+      <button data-testid="select-node-trigger" onClick={() => onFocusDetail?.()}>
+        Select Node
+      </button>
+    </>
+  );
+}
+
+function AccessibleViewPanel(props: AccessibleResultPanelProps): React.ReactElement {
+  const { activeView, chainLabel, executionId, paths, stabilityEntries, durationEntries } = props;
+
+  return (
+    <div data-testid="active-view-panel" role="tabpanel">
+      {activeView === "railway" && (
+        <AccessibleRailwayView
+          chainLabel={chainLabel}
+          operations={props.operations}
+          onFocusDetail={props.onFocusDetail}
+        />
+      )}
+      {activeView === "log" && (
+        <div
+          data-testid="log-grid"
+          role="grid"
+          aria-label={`Operation steps for execution #${executionId ?? ""}`}
+        >
+          <div role="row" aria-rowindex={1}>
+            <div role="gridcell">Step data</div>
+          </div>
+        </div>
+      )}
+      {activeView === "cases" && (
+        <div
+          data-testid="path-tree"
+          role="tree"
+          aria-label={`Possible paths through ${chainLabel ?? "chain"}`}
+        >
+          {paths?.map((p, i) => (
+            <div key={i} data-testid="path-tree-item" role="treeitem">
+              {p.label} - {p.classification} ({p.frequency}%)
+            </div>
+          ))}
+        </div>
+      )}
+      {activeView === "sankey" && (
+        <>
+          <svg
+            data-testid="sankey-svg"
+            role="img"
+            aria-label={`Flow statistics for ${chainLabel ?? "chain"}`}
+          />
+          {stabilityEntries?.map((entry, i) => (
+            <div key={i} data-testid={`stability-zone-${i}`} data-zone={entry.zone}>
+              {entry.port}: {entry.score}%
+            </div>
+          ))}
+        </>
+      )}
+      {activeView === "waterfall" &&
+        durationEntries?.map((entry, i) => (
+          <div key={i} data-testid={`duration-severity-${i}`} data-severity={entry.severity}>
+            {entry.label}: {entry.duration}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+function AccessibleResultPanel(props: AccessibleResultPanelProps): React.ReactElement {
+  const { activeView, onRestoreFocus } = props;
+
+  const announcement = useAccessibilityAnnouncements(props);
+
+  const reducedMotion =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === "Escape") {
       onRestoreFocus?.();
     }
   };
-
-  const hasSwitchOp = operations?.some(op => op.inputTrack !== op.outputTrack);
 
   return (
     <div
@@ -183,12 +281,10 @@ function AccessibleResultPanel({
       data-reduced-motion={reducedMotion ? "true" : "false"}
       onKeyDown={handleKeyDown}
     >
-      {/* Screen reader live region */}
       <div data-testid="sr-announcer" aria-live="polite" role="log">
         {announcement}
       </div>
 
-      {/* View switcher */}
       <div data-testid="view-switcher" role="tablist" aria-label="Result Panel views">
         {VIEW_IDS.map(id => (
           <button
@@ -203,104 +299,8 @@ function AccessibleResultPanel({
         ))}
       </div>
 
-      {/* Active view panel */}
-      <div data-testid="active-view-panel" role="tabpanel">
-        {/* Railway SVG */}
-        {activeView === "railway" && (
-          <>
-            <svg
-              data-testid="railway-svg"
-              role="img"
-              aria-label={`Railway pipeline for ${chainLabel ?? "chain"}`}
-            >
-              {operations?.map((op, i) => (
-                <g
-                  key={i}
-                  data-testid={`operation-node-${i}`}
-                  role="button"
-                  aria-label={`${op.method}(${op.label}), ${op.inputTrack} to ${op.outputTrack}, ${op.duration}`}
-                />
-              ))}
-            </svg>
+      <AccessibleViewPanel {...props} />
 
-            {/* Track indicators */}
-            {operations && operations.length > 0 && (
-              <>
-                <span data-testid="track-indicator-ok" data-shape="filled">
-                  Ok
-                </span>
-                {operations.some(op => op.outputTrack === "err") && (
-                  <span data-testid="track-indicator-err" data-shape="empty">
-                    Err
-                  </span>
-                )}
-              </>
-            )}
-
-            {/* Switch indicator */}
-            {hasSwitchOp && <span data-testid="switch-indicator">switched</span>}
-
-            {/* Node select trigger */}
-            <button data-testid="select-node-trigger" onClick={() => onFocusDetail?.()}>
-              Select Node
-            </button>
-          </>
-        )}
-
-        {/* Operation Log */}
-        {activeView === "log" && (
-          <div
-            data-testid="log-grid"
-            role="grid"
-            aria-label={`Operation steps for execution #${executionId ?? ""}`}
-          >
-            <div role="row" aria-rowindex={1}>
-              <div role="gridcell">Step data</div>
-            </div>
-          </div>
-        )}
-
-        {/* Case Explorer */}
-        {activeView === "cases" && (
-          <div
-            data-testid="path-tree"
-            role="tree"
-            aria-label={`Possible paths through ${chainLabel ?? "chain"}`}
-          >
-            {paths?.map((p, i) => (
-              <div key={i} data-testid="path-tree-item" role="treeitem">
-                {p.label} - {p.classification} ({p.frequency}%)
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Sankey SVG */}
-        {activeView === "sankey" && (
-          <>
-            <svg
-              data-testid="sankey-svg"
-              role="img"
-              aria-label={`Flow statistics for ${chainLabel ?? "chain"}`}
-            />
-            {stabilityEntries?.map((entry, i) => (
-              <div key={i} data-testid={`stability-zone-${i}`} data-zone={entry.zone}>
-                {entry.port}: {entry.score}%
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* Waterfall duration entries */}
-        {activeView === "waterfall" &&
-          durationEntries?.map((entry, i) => (
-            <div key={i} data-testid={`duration-severity-${i}`} data-severity={entry.severity}>
-              {entry.label}: {entry.duration}
-            </div>
-          ))}
-      </div>
-
-      {/* Status bar */}
       <div data-testid="status-bar" role="status" aria-live="polite">
         Ready
       </div>

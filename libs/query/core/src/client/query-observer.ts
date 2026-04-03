@@ -92,31 +92,37 @@ export function createQueryObserver<TData, TParams, TError, TName extends string
   client.cache.getOrCreate(port, params);
   client.cache.incrementObservers(port, params);
 
+  function applySelectTransform(data: TData | undefined): TData | undefined {
+    if (!options?.select || data === undefined) return data;
+    if (!Object.is(data, cachedSelectRawData)) {
+      cachedSelectRawData = data;
+      cachedSelectResult = narrowSelectedData<TData>(options.select(data));
+    }
+    return cachedSelectResult;
+  }
+
+  function computeStatusFlags(status: QueryStatus, fetchStatus: FetchStatus) {
+    const isFetchingFlag = fetchStatus === "fetching";
+    return {
+      isPending: status === "pending",
+      isSuccess: status === "success",
+      isError: status === "error",
+      isFetching: isFetchingFlag,
+      isRefetching: status === "success" && isFetchingFlag,
+      isLoading: status === "pending" && isFetchingFlag,
+    };
+  }
+
   function deriveState(entry: CacheEntry<unknown, unknown> | undefined): QueryState<TData, TError> {
     const status: QueryStatus = entry?.status ?? DEFAULT_STATUS;
     const fetchStatus: FetchStatus = isFetching ? "fetching" : "idle";
-    let data = narrowEntryData<TData>(entry?.data);
+    const data = applySelectTransform(narrowEntryData<TData>(entry?.data));
     const error = narrowEntryError<TError>(entry?.error ?? null);
-
-    // Apply select transform if configured and data is present.
-    // Cache the result so that unchanged raw data produces the same reference.
-    if (options?.select && data !== undefined) {
-      if (!Object.is(data, cachedSelectRawData)) {
-        cachedSelectRawData = data;
-        cachedSelectResult = narrowSelectedData<TData>(options.select(data));
-      }
-      data = cachedSelectResult;
-    }
 
     return {
       status,
       fetchStatus,
-      isPending: status === "pending",
-      isSuccess: status === "success",
-      isError: status === "error",
-      isFetching: fetchStatus === "fetching",
-      isRefetching: status === "success" && fetchStatus === "fetching",
-      isLoading: status === "pending" && fetchStatus === "fetching",
+      ...computeStatusFlags(status, fetchStatus),
       isStale: entry?.isInvalidated ?? true,
       isPlaceholderData: false,
       isPaused: false,

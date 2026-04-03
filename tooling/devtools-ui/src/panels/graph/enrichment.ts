@@ -39,6 +39,45 @@ function buildDependentCounts(
 /**
  * Enrich a layout node with computed rendering properties.
  */
+function extractDescription(metadata: Record<string, unknown> | undefined): string | undefined {
+  if (metadata !== undefined && typeof metadata["description"] === "string") {
+    return metadata["description"];
+  }
+  return undefined;
+}
+
+function buildEnrichedNode(
+  layoutNode: LayoutNode,
+  stats: ResultStatistics | undefined,
+  portInfo: PortInfo | undefined,
+  dependentCount: number,
+  isResolved: boolean,
+  libraryKind: ReturnType<typeof detectLibraryKind>
+): EnrichedGraphNode {
+  const errorRate = stats?.errorRate;
+  return {
+    adapter: layoutNode.adapter,
+    x: layoutNode.x,
+    y: layoutNode.y,
+    width: layoutNode.width,
+    height: layoutNode.height,
+    isResolved,
+    errorRate,
+    hasHighErrorRate: errorRate !== undefined && errorRate >= HIGH_ERROR_RATE_THRESHOLD,
+    totalCalls: stats?.totalCalls ?? 0,
+    okCount: stats?.okCount ?? 0,
+    errCount: stats?.errCount ?? 0,
+    errorsByCode: stats?.errorsByCode ?? new Map(),
+    direction: portInfo?.direction,
+    category: portInfo?.category,
+    tags: portInfo?.tags ?? [],
+    description: extractDescription(layoutNode.adapter.metadata),
+    libraryKind,
+    dependentCount,
+    matchesFilter: false,
+  };
+}
+
 function enrichNode(
   layoutNode: LayoutNode,
   stats: ResultStatistics | undefined,
@@ -47,37 +86,16 @@ function enrichNode(
   isResolved: boolean,
   filter: GraphFilterState
 ): EnrichedGraphNode {
-  const errorRate = stats?.errorRate;
-  const hasHighErrorRate = errorRate !== undefined && errorRate >= HIGH_ERROR_RATE_THRESHOLD;
   const libraryKind = detectLibraryKind(layoutNode.adapter);
-  const metadata = layoutNode.adapter.metadata;
-
-  const enriched: EnrichedGraphNode = {
-    adapter: layoutNode.adapter,
-    x: layoutNode.x,
-    y: layoutNode.y,
-    width: layoutNode.width,
-    height: layoutNode.height,
-    isResolved,
-    errorRate,
-    hasHighErrorRate,
-    totalCalls: stats?.totalCalls ?? 0,
-    okCount: stats?.okCount ?? 0,
-    errCount: stats?.errCount ?? 0,
-    errorsByCode: stats?.errorsByCode ?? new Map(),
-    direction: portInfo?.direction,
-    category: portInfo?.category,
-    tags: portInfo?.tags ?? [],
-    description:
-      metadata !== undefined && typeof metadata["description"] === "string"
-        ? metadata["description"]
-        : undefined,
-    libraryKind,
+  const enriched = buildEnrichedNode(
+    layoutNode,
+    stats,
+    portInfo,
     dependentCount,
-    matchesFilter: false,
-  };
+    isResolved,
+    libraryKind
+  );
 
-  // Compute matchesFilter with the enriched data
   return {
     ...enriched,
     matchesFilter: matchesFilter(enriched, filter),

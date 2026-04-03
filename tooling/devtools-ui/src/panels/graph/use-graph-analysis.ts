@@ -16,48 +16,38 @@ import type { GraphInspection } from "@hex-di/graph/advanced";
  * Since we only have ContainerGraphData at the UI level (not the full Graph
  * object needed by inspectGraph), we compute what we can from the adapter list.
  */
-function analyzeFromGraphData(graphData: ContainerGraphData | undefined): GraphAnalysisState {
-  if (graphData === undefined) {
-    return createEmptyAnalysis();
-  }
+interface AdapterMaps {
+  readonly depMap: Map<string, readonly string[]>;
+  readonly portNames: Set<string>;
+}
 
-  const adapters = graphData.adapters;
-  const adapterCount = adapters.length;
-
-  // Compute dependency map
+function buildAdapterMaps(adapters: ContainerGraphData["adapters"]): AdapterMaps {
   const depMap = new Map<string, readonly string[]>();
   const portNames = new Set<string>();
   for (const a of adapters) {
     depMap.set(a.portName, a.dependencyNames);
     portNames.add(a.portName);
   }
+  return { depMap, portNames };
+}
 
-  // Detect orphan ports (provided but never required by any other adapter)
+function findOrphanPorts(adapters: ContainerGraphData["adapters"]): string[] {
   const requiredPorts = new Set<string>();
   for (const a of adapters) {
     for (const dep of a.dependencyNames) {
       requiredPorts.add(dep);
     }
   }
-  const orphanPorts = adapters
+  return adapters
     .filter(a => !requiredPorts.has(a.portName))
     .map(a => a.portName)
     .sort();
+}
 
-  // Compute max chain depth via iterative DFS
-  const maxChainDepth = computeMaxDepth(depMap);
-
-  // Compute simple complexity score
-  const avgDeps =
-    adapterCount > 0
-      ? adapters.reduce((sum, a) => sum + a.dependencyNames.length, 0) / adapterCount
-      : 0;
-  const complexityScore = Math.round(adapterCount * 2 + maxChainDepth * 3 + avgDeps * 5);
-
-  const recommendation: "safe" | "monitor" | "consider-splitting" =
-    complexityScore <= 50 ? "safe" : complexityScore <= 100 ? "monitor" : "consider-splitting";
-
-  // Detect unsatisfied requirements
+function findUnsatisfied(
+  adapters: ContainerGraphData["adapters"],
+  portNames: Set<string>
+): string[] {
   const unsatisfied = new Set<string>();
   for (const a of adapters) {
     for (const dep of a.dependencyNames) {
@@ -66,19 +56,48 @@ function analyzeFromGraphData(graphData: ContainerGraphData | undefined): GraphA
       }
     }
   }
-  const unsatisfiedRequirements = [...unsatisfied].sort();
+  return [...unsatisfied].sort();
+}
 
-  // Ports with inbound/outbound metadata
-  let inboundCount = 0;
-  let outboundCount = 0;
+function countDirections(adapters: ContainerGraphData["adapters"]): {
+  inbound: number;
+  outbound: number;
+} {
+  let inbound = 0;
+  let outbound = 0;
   for (const a of adapters) {
     const dir =
       a.metadata !== undefined && typeof a.metadata["direction"] === "string"
         ? a.metadata["direction"]
         : undefined;
-    if (dir === "inbound") inboundCount++;
-    else if (dir === "outbound") outboundCount++;
+    if (dir === "inbound") inbound++;
+    else if (dir === "outbound") outbound++;
   }
+  return { inbound, outbound };
+}
+
+function analyzeFromGraphData(graphData: ContainerGraphData | undefined): GraphAnalysisState {
+  if (graphData === undefined) {
+    return createEmptyAnalysis();
+  }
+
+  const adapters = graphData.adapters;
+  const adapterCount = adapters.length;
+  const { depMap, portNames } = buildAdapterMaps(adapters);
+
+  const orphanPorts = findOrphanPorts(adapters);
+  const maxChainDepth = computeMaxDepth(depMap);
+
+  const avgDeps =
+    adapterCount > 0
+      ? adapters.reduce((sum, a) => sum + a.dependencyNames.length, 0) / adapterCount
+      : 0;
+  const complexityScore = Math.round(adapterCount * 2 + maxChainDepth * 3 + avgDeps * 5);
+  const recommendation: "safe" | "monitor" | "consider-splitting" =
+    complexityScore <= 50 ? "safe" : complexityScore <= 100 ? "monitor" : "consider-splitting";
+
+  const unsatisfiedRequirements = findUnsatisfied(adapters, portNames);
+  const directionSummary = countDirections(adapters);
 
   return {
     isOpen: false,
@@ -90,7 +109,7 @@ function analyzeFromGraphData(graphData: ContainerGraphData | undefined): GraphA
     disposalWarnings: [],
     unnecessaryLazyPorts: [],
     portsWithFinalizers: [],
-    directionSummary: { inbound: inboundCount, outbound: outboundCount },
+    directionSummary,
     maxChainDepth,
     isComplete: unsatisfiedRequirements.length === 0,
     unsatisfiedRequirements,

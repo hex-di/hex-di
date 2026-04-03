@@ -37,43 +37,39 @@ const VALID_LIFETIMES: ReadonlySet<string> = Object.freeze(
  * }
  * ```
  */
+function isValidPort(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return false;
+  if (!("__portName" in value) || typeof value.__portName !== "string") return false;
+  return value.__portName.length > 0;
+}
+
+function isValidRequires(requires: unknown): boolean {
+  if (!Array.isArray(requires)) return false;
+  const list: readonly unknown[] = requires;
+  for (const req of list) {
+    if (req === null || typeof req !== "object") return false;
+    if (!("__portName" in req) || typeof req.__portName !== "string") return false;
+  }
+  return true;
+}
+
+function isValidAdapter(adapter: unknown): boolean {
+  if (adapter === null || typeof adapter !== "object") return false;
+  if (!("provides" in adapter) || !isValidPort(adapter.provides)) return false;
+  if (!("requires" in adapter) || !isValidRequires(adapter.requires)) return false;
+  if (!("lifetime" in adapter) || typeof adapter.lifetime !== "string") return false;
+  return VALID_LIFETIMES.has(adapter.lifetime);
+}
+
 export function isGraph(value: unknown): value is Graph {
   if (value === null || typeof value !== "object") return false;
-
-  // Check adapters property
   if (!("adapters" in value) || !Array.isArray(value.adapters)) return false;
 
-  // Bind to unknown[] to avoid `any` from Array.isArray narrowing
   const adapters: readonly unknown[] = value.adapters;
-
-  // Deep validation for each adapter
   for (const adapter of adapters) {
-    if (adapter === null || typeof adapter !== "object") return false;
-
-    // Validate provides
-    if (!("provides" in adapter)) return false;
-    const { provides } = adapter;
-    if (provides === null || typeof provides !== "object") return false;
-    if (!("__portName" in provides) || typeof provides.__portName !== "string") return false;
-    if (provides.__portName.length === 0) return false;
-
-    // Validate requires
-    if (!("requires" in adapter)) return false;
-    const { requires } = adapter;
-    if (!Array.isArray(requires)) return false;
-    const requiresList: readonly unknown[] = requires;
-    for (const req of requiresList) {
-      if (req === null || typeof req !== "object") return false;
-      if (!("__portName" in req) || typeof req.__portName !== "string") return false;
-    }
-
-    // Validate lifetime
-    if (!("lifetime" in adapter) || typeof adapter.lifetime !== "string") return false;
-    if (!VALID_LIFETIMES.has(adapter.lifetime)) return false;
+    if (!isValidAdapter(adapter)) return false;
   }
 
-  // Check overridePortNames property
   if (!("overridePortNames" in value) || !(value.overridePortNames instanceof Set)) return false;
-
   return true;
 }
